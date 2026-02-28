@@ -1,0 +1,7 @@
+Place your TFLite model files here:
+
+  yolov8_fsl.tflite
+  yolonas_fsl.tflite
+  yolo11_fsl.tflite
+
+See README.md for export commands and expected tensor shapes.

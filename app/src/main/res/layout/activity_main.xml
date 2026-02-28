@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header Banner -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#1A237E">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="FSL Alphabet Detector"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="YOLOv8 · YOLO-NAS · YOLO11  |  27 Classes (A–Z + Ñ)"
+                    android:textColor="#B0BEC5"
+                    android:textSize="13sp"
+                    android:layout_marginTop="4dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Model Selection -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select Model"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#37474F"
+                    android:layout_marginBottom="8dp"/>
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupModel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipYolov8"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="YOLOv8"
+                        style="@style/Widget.Material3.Chip.Filter"/>
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipYoloNas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="YOLO-NAS"
+                        style="@style/Widget.Material3.Chip.Filter"/>
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipYolo11"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="YOLO11"
+                        style="@style/Widget.Material3.Chip.Filter"/>
+                </com.google.android.material.chip.ChipGroup>
+                <TextView
+                    android:id="@+id/tvActiveModel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textSize="12sp"
+                    android:textColor="#78909C"
+                    android:text="Active: YOLOv8"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Backend Selection -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Inference Backend"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#37474F"
+                    android:layout_marginBottom="8dp"/>
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupBackend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCpu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CPU (XNNPACK)"
+                        style="@style/Widget.Material3.Chip.Filter"/>
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGpu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="GPU (OpenGL)"
+                        style="@style/Widget.Material3.Chip.Filter"/>
+                </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Thresholds -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:id="@+id/tvConfidence"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Confidence threshold: 0.25"
+                    android:textSize="13sp"
+                    android:textColor="#37474F"/>
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderConfidence"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="0.05"
+                    android:valueTo="0.95"
+                    android:stepSize="0.05"
+                    android:value="0.25"/>
+                <TextView
+                    android:id="@+id/tvIou"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="IoU (NMS) threshold: 0.45"
+                    android:textSize="13sp"
+                    android:textColor="#37474F"
+                    android:layout_marginTop="8dp"/>
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderIou"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="0.10"
+                    android:valueTo="0.90"
+                    android:stepSize="0.05"
+                    android:value="0.45"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Action Buttons -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSingleImage"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Select Single Image"
+            android:textSize="15sp"
+            android:layout_marginBottom="10dp"
+            app:icon="@android:drawable/ic_menu_gallery"
+            app:iconGravity="textStart"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBatchFolder"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Batch Process Folder"
+            android:textSize="15sp"
+            android:layout_marginBottom="12dp"
+            style="@style/Widget.Material3.Button.TonalButton"
+            app:icon="@android:drawable/ic_menu_slideshow"
+            app:iconGravity="textStart"/>
+
+        <!-- Progress -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/tvBatchProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:textSize="13sp"
+            android:textColor="#546E7A"
+            android:visibility="gone"/>
+
+        <!-- Instructions -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#E8F5E9">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📁 Setup Instructions"
+                    android:textStyle="bold"
+                    android:textSize="13sp"
+                    android:textColor="#1B5E20"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#2E7D32"
+                    android:lineSpacingMultiplier="1.4"
+                    android:layout_marginTop="6dp"
+                    android:text="1. Place model files in app/src/main/assets/:\n   • yolov8_fsl.tflite\n   • yolonas_fsl.tflite\n   • yolo11_fsl.tflite\n\n2. For batch metrics, place YOLO .txt label files alongside each image (same filename, .txt extension).\n\n3. Warm-up: 10 iterations are run automatically before timing starts."/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+</ScrollView>
