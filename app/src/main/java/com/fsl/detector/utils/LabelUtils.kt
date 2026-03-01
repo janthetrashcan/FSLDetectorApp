@@ -71,17 +71,6 @@ object LabelUtils {
         }
     }
 
-    /** Decode a bitmap from a content/file Uri. */
-    fun decodeBitmapFromUri(context: Context, uri: Uri): Bitmap? {
-        return try {
-            context.contentResolver.openInputStream(uri)?.use {
-                BitmapFactory.decodeStream(it)
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     fun buildDirectoryIndex(folderUri: Uri, context: Context): Map<String, DocumentFile> {
         val dir = DocumentFile.fromTreeUri(context, folderUri) ?: return emptyMap()
         return dir.listFiles().associateBy { it.name ?: "" }
@@ -105,26 +94,68 @@ object LabelUtils {
 
     fun decodeBitmapFromDocument(doc: DocumentFile, context: Context, targetSize: Int = 640): Bitmap? {
         return try {
-            // First pass: read dimensions only
             val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.contentResolver.openInputStream(doc.uri)?.use { BitmapFactory.decodeStream(it, null, opts) }
+            context.contentResolver.openInputStream(doc.uri)?.use {
+                BitmapFactory.decodeStream(it, null, opts)
+            }
 
-            // Calculate sample size: largest power-of-2 that keeps both dims above targetSize
             var sampleSize = 1
             val (w, h) = opts.outWidth to opts.outHeight
             while ((w / (sampleSize * 2)) >= targetSize && (h / (sampleSize * 2)) >= targetSize) {
                 sampleSize *= 2
             }
 
-            // Second pass: decode at reduced resolution
             val decodeOpts = BitmapFactory.Options().apply {
-                inSampleSize        = sampleSize
-                inPreferredConfig   = Bitmap.Config.ARGB_8888
+                inSampleSize      = sampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
             }
-            context.contentResolver.openInputStream(doc.uri)?.use { BitmapFactory.decodeStream(it, null, decodeOpts) }
+
+            val bitmap = context.contentResolver.openInputStream(doc.uri)?.use {
+                BitmapFactory.decodeStream(it, null, decodeOpts)
+            } ?: return null
+
+            applyExifRotation(bitmap, context, doc.uri)
         } catch (e: Exception) {
             null
         }
+    }
+
+    fun decodeBitmapFromUri(context: Context, uri: Uri): Bitmap? {
+        return try {
+            val bitmap = context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it)
+            } ?: return null
+
+            applyExifRotation(bitmap, context, uri)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun applyExifRotation(bitmap: Bitmap, context: Context, uri: Uri): Bitmap {
+        val degrees = try {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val exif = androidx.exifinterface.media.ExifInterface(stream)
+                when (exif.getAttributeInt(
+                    androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION,
+                    androidx.exifinterface.media.ExifInterface.ORIENTATION_NORMAL
+                )) {
+                    androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_90  ->  90f
+                    androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                    androidx.exifinterface.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                    else -> 0f
+                }
+            } ?: 0f
+        } catch (e: Exception) {
+            0f
+        }
+
+        if (degrees == 0f) return bitmap
+
+        val matrix = android.graphics.Matrix().apply { postRotate(degrees) }
+        val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        bitmap.recycle()
+        return rotated
     }
 
 }

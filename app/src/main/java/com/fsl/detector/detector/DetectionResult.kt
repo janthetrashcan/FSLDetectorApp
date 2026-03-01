@@ -1,6 +1,7 @@
 package com.fsl.detector.detector
 
 import android.graphics.RectF
+import android.net.Uri
 
 /**
  * Represents a single detection bounding box with its associated class and confidence.
@@ -32,11 +33,10 @@ data class GroundTruth(
     val boundingBox: RectF          // normalized [0,1] xCenter,yCenter,w,h → converted to xMin,yMin,xMax,yMax
 )
 
-enum class ModelType(val displayName: String, val assetFileName: String) {
-    YOLOV8("YOLOv8", "yolov8_fsl.tflite"),
-    YOLO_NAS("YOLO-NAS", "yolonas_fsl.tflite"),
-    YOLO11("YOLO11", "yolo11_fsl.tflite")
-}
+data class ModelConfig(
+    val displayName: String,
+    val uri: Uri
+)
 
 enum class BackendType(val displayName: String) {
     CPU("CPU (XNNPACK)"),

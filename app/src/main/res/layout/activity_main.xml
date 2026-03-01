@@ -61,39 +61,29 @@
                     android:textStyle="bold"
                     android:textColor="#37474F"
                     android:layout_marginBottom="8dp"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnScanModels"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Scan Folder for .tflite Models"
+                    android:layout_marginBottom="10dp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_search"
+                    app:iconGravity="textStart"/>
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupModel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:singleSelection="true"
-                    app:selectionRequired="true">
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipYolov8"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="YOLOv8"
-                        style="@style/Widget.Material3.Chip.Filter"/>
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipYoloNas"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="YOLO-NAS"
-                        style="@style/Widget.Material3.Chip.Filter"/>
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipYolo11"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="YOLO11"
-                        style="@style/Widget.Material3.Chip.Filter"/>
-                </com.google.android.material.chip.ChipGroup>
+                    app:selectionRequired="true"/>
                 <TextView
                     android:id="@+id/tvActiveModel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:textSize="12sp"
                     android:textColor="#78909C"
-                    android:text="Active: YOLOv8"/>
+                    android:text="No .tflite files found — tap Scan"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -232,7 +222,8 @@
             android:layout_marginTop="8dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="2dp"
-            app:cardBackgroundColor="#E8F5E9">
+            app:cardBackgroundColor="#E8F5E9"
+            >
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -241,7 +232,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📁 Setup Instructions"
+                    android:text="Setup Instructions"
                     android:textStyle="bold"
                     android:textSize="13sp"
                     android:textColor="#1B5E20"/>
@@ -252,7 +243,7 @@
                     android:textColor="#2E7D32"
                     android:lineSpacingMultiplier="1.4"
                     android:layout_marginTop="6dp"
-                    android:text="1. Place model files in app/src/main/assets/:\n   • yolov8_fsl.tflite\n   • yolonas_fsl.tflite\n   • yolo11_fsl.tflite\n\n2. For batch metrics, place YOLO .txt label files alongside each image (same filename, .txt extension).\n\n3. Warm-up: 10 iterations are run automatically before timing starts."/>
+                    android:text="1. Place model files in a folder in the file system\n\n2. Load them with the Scan Folder for .tflite Models button\n\n3. For batch metrics, place YOLO .txt label files alongside each image (same filename, .txt extension).\n\n4. Warm-up: 10 iterations are run automatically before timing starts."/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
