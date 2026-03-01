@@ -1,13 +1,14 @@
-name: Android CI Build
+name: Android CI Build & Release
 
 on:
   push:
     branches:
       - main
       - develop
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
-      # Optional inputs for manual runs
       environment:
         description: 'Deployment environment'
         required: true
@@ -19,8 +20,11 @@ on:
       run_lint:
         description: 'Run Android lint?'
         required: false
-        default: 'true'
+        default: true
         type: boolean
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -40,9 +44,36 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run Android Lint (if selected manually)
+      - name: Run Android Lint
         if: github.event_name == 'push' || github.event.inputs.run_lint == 'true'
         run: ./gradlew lint
 
-      - name: Build Android project
-        run: ./gradlew build
+      - name: Build Release APK and Bundle
+        run: ./gradlew assembleRelease bundleRelease
+
+      - name: Rename Artifacts
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/MyAwesomeApp-${{ github.ref_name }}.apk
+          mv app/build/outputs/bundle/release/app-release-unsigned.aab app/build/outputs/bundle/release/MyAwesomeApp-${{ github.ref_name }}.aab
+
+      - name: Upload Artifacts to Actions Tab
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-outputs
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
