@@ -1,33 +1,48 @@
-name: Android CI
+name: Android CI Build
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      # Optional inputs for manual runs
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      run_lint:
+        description: 'Run Android lint?'
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4 # Step 1: Check out repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17 # Step 2: Ensure the correct Java Development Kit is available
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew # Step 3: Make the Gradle wrapper script executable
+      - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APK # Step 4: Run the Gradle task to assemble a debug APK
-        run: ./gradlew assembleDebug
+      - name: Run Android Lint (if selected manually)
+        if: github.event_name == 'push' || github.event.inputs.run_lint == 'true'
+        run: ./gradlew lint
 
-      - name: Upload Artifact # Step 5: Save the generated APK as a workflow artifact for download
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+      - name: Build Android project
+        run: ./gradlew build
