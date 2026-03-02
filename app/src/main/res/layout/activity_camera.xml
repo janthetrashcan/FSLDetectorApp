@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Camera preview -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:scaleType="fitCenter"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Bounding box overlay (reuse existing view) -->
+    <com.fsl.detector.ui.BoundingBoxOverlayView
+        android:id="@+id/overlayView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Top stats bar -->
+    <LinearLayout
+        android:id="@+id/statsBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#AA000000"
+        android:padding="8dp"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/tvFps"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="FPS: --"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:fontFamily="monospace"/>
+
+        <TextView
+            android:id="@+id/tvInferenceMs"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="-- ms"
+            android:textColor="#4ECDC4"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:gravity="center"/>
+
+        <TextView
+            android:id="@+id/tvCpu"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="CPU: --"
+            android:textColor="#FFD700"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:gravity="center"/>
+
+        <TextView
+            android:id="@+id/tvRam"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="RAM: --"
+            android:textColor="#FF6B6B"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:gravity="center"/>
+
+        <TextView
+            android:id="@+id/tvGpu"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="GPU: --"
+            android:textColor="#96CEB4"
+            android:textSize="12sp"
+            android:fontFamily="monospace"
+            android:gravity="end"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvActiveModel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:text="Model: --"
+        android:textColor="#BBBBBB"
+        android:textSize="11sp"
+        android:paddingStart="8dp"
+        app:layout_constraintTop_toBottomOf="@+id/statsBar" />
+
+    <!-- Bottom controls -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#AA000000"
+        android:padding="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Model chips -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupModels"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true"/>
+        </HorizontalScrollView>
+
+        <!-- Flip / Close buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFlipCamera"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Flip Camera"
+                style="@style/Widget.Material3.Button.TonalButton"
+                app:icon="@android:drawable/ic_menu_camera"
+                app:iconGravity="textStart"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnClose"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Close"
+                style="@style/Widget.Material3.Button.TonalButton"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

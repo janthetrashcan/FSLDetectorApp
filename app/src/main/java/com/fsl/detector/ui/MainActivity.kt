@@ -17,6 +17,7 @@ import com.google.android.material.chip.Chip
 import com.fsl.detector.databinding.ActivityMainBinding
 import com.fsl.detector.detector.BackendType
 import com.fsl.detector.detector.ModelConfig
+import com.fsl.detector.utils.MetricsCache
 
 class MainActivity : AppCompatActivity() {
 
@@ -123,6 +124,18 @@ class MainActivity : AppCompatActivity() {
             }
             withPermission { batchFolderLauncher.launch(null) }
         }
+        binding.btnLiveCamera.setOnClickListener {
+            if (MetricsCache.availableModels.isEmpty()) {
+                Toast.makeText(this, "Scan for models first", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val intent = Intent(this, CameraActivity::class.java).apply {
+                putExtra(CameraActivity.EXTRA_BACKEND,    viewModel.selectedBackend.name)
+                putExtra(CameraActivity.EXTRA_CONFIDENCE, viewModel.confidenceThreshold)
+                putExtra(CameraActivity.EXTRA_IOU,        viewModel.iouThreshold)
+            }
+            startActivity(intent)
+        }
     }
 
     private fun observeViewModel() {
@@ -197,10 +210,14 @@ class MainActivity : AppCompatActivity() {
     // ── Permissions ──────────────────────────────────────────────────
 
     private fun withPermission(action: () -> Unit) {
-        val perms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
-        else
-            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        val perms = buildList {
+            add(Manifest.permission.CAMERA)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                add(Manifest.permission.READ_MEDIA_IMAGES)
+            else
+                add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }.toTypedArray()
+
         if (perms.all { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED })
             action()
         else { pendingAction = action; permissionLauncher.launch(perms) }

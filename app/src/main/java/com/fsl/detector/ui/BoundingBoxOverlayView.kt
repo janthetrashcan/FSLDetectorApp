@@ -50,24 +50,32 @@ class BoundingBoxOverlayView @JvmOverloads constructor(
 
     var originalImageWidth: Int = 1
     var originalImageHeight: Int = 1
+    val previewWidth: Float get() = width.toFloat()
 
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        val scaleX = width.toFloat() / originalImageWidth
-        val scaleY = height.toFloat() / originalImageHeight
+        val viewW = width.toFloat()
+        val viewH = height.toFloat()
+        val imgW  = originalImageWidth.toFloat()
+        val imgH  = originalImageHeight.toFloat()
+
+        // Match PreviewView fitCenter: uniform scale, whole image visible, letterboxed
+        val scale   = minOf(viewW / imgW, viewH / imgH)
+        val offsetX = (viewW - imgW * scale) / 2f
+        val offsetY = (viewH - imgH * scale) / 2f
 
         for (det in detections) {
             val color = COLORS[det.classIndex % COLORS.size]
-            boxPaint.color = color
+            boxPaint.color    = color
             textBgPaint.color = color
 
             val scaledBox = RectF(
-                det.boundingBox.left   * scaleX,
-                det.boundingBox.top    * scaleY,
-                det.boundingBox.right  * scaleX,
-                det.boundingBox.bottom * scaleY
+                det.boundingBox.left   * scale + offsetX,
+                det.boundingBox.top    * scale + offsetY,
+                det.boundingBox.right  * scale + offsetX,
+                det.boundingBox.bottom * scale + offsetY
             )
 
             canvas.drawRoundRect(scaledBox, 8f, 8f, boxPaint)

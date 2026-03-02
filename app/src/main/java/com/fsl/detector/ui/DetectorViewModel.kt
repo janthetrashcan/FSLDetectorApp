@@ -71,6 +71,7 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
                 found.sortedBy { it.displayName }
             }
             availableModels.value = models
+            MetricsCache.availableModels = models
             if (models.isNotEmpty() && selectedModel == null) {
                 selectedModel = models.first()
             }

@@ -192,9 +192,20 @@
             android:layout_height="56dp"
             android:text="Batch Process Folder"
             android:textSize="15sp"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="10dp"
             style="@style/Widget.Material3.Button.TonalButton"
             app:icon="@android:drawable/ic_menu_slideshow"
+            app:iconGravity="textStart"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLiveCamera"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Live Camera"
+            android:textSize="15sp"
+            android:layout_marginBottom="12dp"
+            style="@style/Widget.Material3.Button.TonalButton"
+            app:icon="@android:drawable/ic_menu_camera"
             app:iconGravity="textStart"/>
 
         <!-- Progress -->
