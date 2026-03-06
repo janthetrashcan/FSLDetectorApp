@@ -8,13 +8,16 @@
         <item name="colorSurfaceVariant">@color/md_theme_surface_variant</item>
         <item name="colorOnSurfaceVariant">@color/md_theme_on_surface_variant</item>
         <item name="colorOutline">@color/md_theme_outline</item>
-        <item name="android:windowBackground">?attr/colorSurface</item>
-        <item name="cardViewStyle">@style/FSLCardView</item>
+        <item name="android:colorBackground">@color/md_theme_surface</item>
+        <item name="android:windowBackground">@color/md_theme_surface</item>
+        <item name="colorSurfaceContainer">@color/md_theme_surface_card</item>
+        <item name="materialCardViewStyle">@style/FSLCardView</item>
     </style>
 
     <style name="FSLCardView" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardBackgroundColor">?attr/colorSurface</item>
-        <item name="cardElevation">2dp</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainer</item>
+        <item name="cardElevation">0dp</item>
         <item name="cornerRadius">12dp</item>
+        <item name="strokeWidth">0dp</item>
     </style>
 </resources>
