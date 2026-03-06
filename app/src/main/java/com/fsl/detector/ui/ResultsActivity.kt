@@ -89,6 +89,12 @@ class ResultsActivity : AppCompatActivity() {
             legend.isEnabled      = true
             animateY(800)
             invalidate()
+
+            val textColor = resolveAttrColor(android.R.attr.textColorPrimary)
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            xAxis.textColor        = textColor
+            axisLeft.textColor     = textColor
+            legend.textColor       = textColor
         }
     }
 
@@ -104,5 +110,12 @@ class ResultsActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) { finish(); return true }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun resolveAttrColor(attr: Int): Int {
+        val ta = theme.obtainStyledAttributes(intArrayOf(attr))
+        val color = ta.getColor(0, android.graphics.Color.BLACK)
+        ta.recycle()
+        return color
     }
 }

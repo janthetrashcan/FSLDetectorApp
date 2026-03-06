@@ -35,15 +35,29 @@ class ConfusionMatrixView @JvmOverloads constructor(
         color    = Color.BLACK
         typeface = Typeface.DEFAULT_BOLD
     }
-    private val labelPaint  = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color    = Color.parseColor("#37474F")
+    private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        // resolved at draw time from context theme
+        color    = resolveAttrColor(android.R.attr.textColorSecondary)
         typeface = Typeface.DEFAULT
+    }
+
+    private val axisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color     = resolveAttrColor(android.R.attr.textColorPrimary)
+        textSize  = 11f
+        typeface  = Typeface.DEFAULT_BOLD
+        textAlign = Paint.Align.CENTER
     }
     private val whitePaint  = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
     private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color     = Color.parseColor("#E0E0E0")
         style     = Paint.Style.STROKE
         strokeWidth = 0.5f
+    }
+
+    val legendLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color     = resolveAttrColor(android.R.attr.textColorSecondary)
+        textSize  = 10f
+        textAlign = Paint.Align.LEFT
     }
 
     // Pan & zoom
@@ -199,5 +213,12 @@ class ConfusionMatrixView @JvmOverloads constructor(
             canvas.drawText("0.5", legendLeft + legendW + 2f, legendTop + legendHeight / 2f, legendLabelPaint)
             canvas.drawText("0.0", legendLeft + legendW + 2f, legendTop + legendHeight, legendLabelPaint)
         }
+    }
+
+    private fun resolveAttrColor(attr: Int): Int {
+        val ta = context.obtainStyledAttributes(intArrayOf(attr))
+        val color = ta.getColor(0, Color.BLACK)
+        ta.recycle()
+        return color
     }
 }
