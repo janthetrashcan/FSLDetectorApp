@@ -30,6 +30,7 @@ class ResultsActivity : AppCompatActivity() {
         populateSummary(metrics, modelName, backend)
         setupBarChart(metrics)
         setupPerClassTable(metrics)
+        setupConfusionMatrix(metrics)
     }
 
     private fun populateSummary(m: MetricsCalculator.AggregateMetrics, model: String, backend: String) {
@@ -94,6 +95,10 @@ class ResultsActivity : AppCompatActivity() {
     private fun setupPerClassTable(m: MetricsCalculator.AggregateMetrics) {
         binding.rvPerClass.layoutManager = LinearLayoutManager(this)
         binding.rvPerClass.adapter = PerClassAdapter(m.perClassStats)
+    }
+
+    private fun setupConfusionMatrix(m: MetricsCalculator.AggregateMetrics) {
+        binding.confusionMatrixView.matrix = m.confusionMatrix
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

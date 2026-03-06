@@ -164,5 +164,44 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Confusion Matrix -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Normalized Confusion Matrix"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#37474F"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Rows = Actual class · Columns = Predicted class · Pinch to zoom · Drag to pan"
+                    android:textSize="11sp"
+                    android:textColor="#90A4AE"
+                    android:layout_marginBottom="12dp"/>
+
+                <com.fsl.detector.ui.ConfusionMatrixView
+                    android:id="@+id/confusionMatrixView"
+                    android:layout_width="match_parent"
+                    android:layout_height="420dp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
     </LinearLayout>
 </ScrollView>

@@ -46,7 +46,8 @@ object MetricsCalculator {
         val f1StdDev: Float,
         val totalImages: Int,
         val totalDetections: Int,
-        val totalGroundTruths: Int
+        val totalGroundTruths: Int,
+        val confusionMatrix: Array<FloatArray>  // [gtClass][predClass], row-normalized
     )
 
     private const val IOU_THRESHOLD_50 = 0.50f
@@ -167,114 +168,120 @@ object MetricsCalculator {
         val numClasses = YOLODetector.NUM_CLASSES
         val classNames = YOLODetector.FSL_CLASSES
 
-        // Per-class accumulator: list of (confidence, isTP) for AP computation
         val classDetections = Array(numClasses) { mutableListOf<Pair<Float, Boolean>>() }
         val classGTCounts   = IntArray(numClasses)
+        val rawMatrix       = Array(numClasses) { IntArray(numClasses) }  // [gtClass][predClass]
 
         var globalTP = 0; var globalFP = 0; var globalFN = 0; var globalTN = 0
         val inferenceTimes = results.map { it.inferenceTimeMs }
 
+        var debugFired = false
         for (result in results) {
+            val tag = if (!debugFired && result.debugTag.isNotEmpty()
+                && result.detections.isNotEmpty() && result.groundTruths.isNotEmpty()) {
+                debugFired = true
+                result.debugTag
+            } else ""
+
+            // Single call — reuse matchedPairs for both metrics AND confusion matrix
             val (matchedPairs, unmatchedGTs) = matchDetectionsToGroundTruths(
-                result.detections, result.groundTruths,
-                debugTag = result.debugTag
+                result.detections, result.groundTruths, debugTag = tag
             )
 
-            // Count GTs per class
             for (gt in result.groundTruths) {
                 classGTCounts[gt.classIndex]++
             }
 
-            // TP / FP from matched detections
             for ((det, gt) in matchedPairs) {
                 if (gt != null) {
-                    // True Positive
                     globalTP++
                     classDetections[det.classIndex].add(det.confidence to true)
+                    // TP: row = actual class, col = predicted class
+                    rawMatrix[gt.classIndex][det.classIndex]++
                 } else {
-                    // False Positive
                     globalFP++
                     classDetections[det.classIndex].add(det.confidence to false)
                 }
             }
 
-            // FN from unmatched ground truths
             globalFN += unmatchedGTs.size
             for (gt in unmatchedGTs) {
-                classDetections[gt.classIndex].add(0f to false)  // missed detection
+                classDetections[gt.classIndex].add(0f to false)
+                // FN: predicted nothing — counts against the GT class row but no column to assign
+                // Row sum deficit handles this automatically during normalization
             }
 
-            // TN: classes that had no GT and no detection in this image
             val detectedClasses = result.detections.map { it.classIndex }.toSet()
-            val gtClasses = result.groundTruths.map { it.classIndex }.toSet()
+            val gtClasses       = result.groundTruths.map { it.classIndex }.toSet()
             for (c in 0 until numClasses) {
                 if (c !in gtClasses && c !in detectedClasses) globalTN++
             }
         }
 
-        val totalPredictions = globalTP + globalFP + globalTN + globalFN
+        // Row-normalize: divide each cell by the total GT count for that class
+        // Using classGTCounts as the denominator instead of rowSum so FNs are included
+        val confusionMatrix = Array(numClasses) { r ->
+            val total = classGTCounts[r]
+            if (total == 0) FloatArray(numClasses)
+            else FloatArray(numClasses) { c -> rawMatrix[r][c].toFloat() / total }
+        }
 
-        // Aggregate metrics
+        val totalPredictions = globalTP + globalFP + globalTN + globalFN
         val precision = if (globalTP + globalFP > 0) globalTP.toFloat() / (globalTP + globalFP) else 0f
         val recall    = if (globalTP + globalFN > 0) globalTP.toFloat() / (globalTP + globalFN) else 0f
         val accuracy  = if (totalPredictions > 0) (globalTP + globalTN).toFloat() / totalPredictions else 0f
         val f1        = if (precision + recall > 0) 2 * precision * recall / (precision + recall) else 0f
 
-        // Per-class stats
         val perClassStats = (0 until numClasses).map { c ->
             val gtCount = classGTCounts[c]
             val dets    = classDetections[c]
             val tp  = dets.count { it.second }
             val fp  = dets.count { !it.second && it.first > 0f }
             val fn  = gtCount - tp
-            val tn  = 0  // TNs are global
-
-            val p  = if (tp + fp > 0) tp.toFloat() / (tp + fp) else 0f
-            val r  = if (tp + fn > 0) tp.toFloat() / (tp + fn) else 0f
+            val p   = if (tp + fp > 0) tp.toFloat() / (tp + fp) else 0f
+            val r   = if (tp + fn > 0) tp.toFloat() / (tp + fn) else 0f
             val f1c = if (p + r > 0) 2 * p * r / (p + r) else 0f
-            val ap = computeAP(dets, gtCount)
-
-            PerClassStats(classNames[c], tp, fp, fn, tn, p, r, f1c, ap)
+            val ap  = computeAP(dets, gtCount)
+            PerClassStats(classNames[c], tp, fp, fn, 0, p, r, f1c, ap)
         }
 
         val mAP50 = perClassStats
-            .filter { classGTCounts[perClassStats.indexOf(it)] > 0 }
+            .filterIndexed { i, _ -> classGTCounts[i] > 0 }
             .map { it.ap50 }
             .average()
             .toFloat()
 
-        // F1 std dev across classes (only classes with GT)
         val classF1s = perClassStats
             .filterIndexed { i, _ -> classGTCounts[i] > 0 }
             .map { it.f1 }
-        val meanF1 = if (classF1s.isNotEmpty()) classF1s.average().toFloat() else 0f
-        val f1StdDev = if (classF1s.size > 1) {
+        val meanF1   = if (classF1s.isNotEmpty()) classF1s.average().toFloat() else 0f
+        val f1StdDev = if (classF1s.size > 1)
             kotlin.math.sqrt(classF1s.map { (it - meanF1) * (it - meanF1) }.average()).toFloat()
-        } else 0f
+        else 0f
 
-        // Inference timing stats
-        val meanInference = if (inferenceTimes.isNotEmpty()) inferenceTimes.average().toFloat() else 0f
-        val minInference  = inferenceTimes.minOrNull() ?: 0L
-        val maxInference  = inferenceTimes.maxOrNull() ?: 0L
-        val stdDevInference = if (inferenceTimes.size > 1) {
+        val meanInference   = if (inferenceTimes.isNotEmpty()) inferenceTimes.average().toFloat() else 0f
+        val minInference    = inferenceTimes.minOrNull() ?: 0L
+        val maxInference    = inferenceTimes.maxOrNull() ?: 0L
+        val stdDevInference = if (inferenceTimes.size > 1)
             kotlin.math.sqrt(inferenceTimes.map { (it - meanInference) * (it - meanInference) }.average()).toFloat()
-        } else 0f
+        else 0f
 
         return AggregateMetrics(
-            precision       = precision,
-            recall          = recall,
-            accuracy        = accuracy,
-            f1              = f1,
-            mAP50           = mAP50,
-            meanInferenceMs = meanInference,
-            minInferenceMs  = minInference,
-            maxInferenceMs  = maxInference,
+            precision         = precision,
+            recall            = recall,
+            accuracy          = accuracy,
+            f1                = f1,
+            mAP50             = mAP50,
+            meanInferenceMs   = meanInference,
+            minInferenceMs    = minInference,
+            maxInferenceMs    = maxInference,
             stdDevInferenceMs = stdDevInference,
-            perClassStats   = perClassStats,
-            f1StdDev        = f1StdDev,
-            totalImages     = results.size,
-            totalDetections = results.sumOf { it.detections.size },
-            totalGroundTruths = results.sumOf { it.groundTruths.size }
+            perClassStats     = perClassStats,
+            f1StdDev          = f1StdDev,
+            totalImages       = results.size,
+            totalDetections   = results.sumOf { it.detections.size },
+            totalGroundTruths = results.sumOf { it.groundTruths.size },
+            confusionMatrix   = confusionMatrix
         )
     }
 }
