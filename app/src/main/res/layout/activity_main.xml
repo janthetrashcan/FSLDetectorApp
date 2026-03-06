@@ -12,78 +12,17 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Summary Card -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
+        <!-- Header -->
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="?attr/colorSurface"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-                <TextView
-                    android:id="@+id/tvSummaryHeader"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface"
-                    android:layout_marginBottom="10dp"/>
-                <TextView android:id="@+id/tvTotalImages"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"/>
-                <TextView android:id="@+id/tvTotalDets"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"/>
-                <TextView android:id="@+id/tvTotalGTs"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
-                    android:layout_marginBottom="10dp"/>
-                <TextView android:id="@+id/tvPrecision"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
-                    android:fontFamily="monospace"/>
-                <TextView android:id="@+id/tvRecall"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
-                    android:fontFamily="monospace"/>
-                <TextView android:id="@+id/tvAccuracy"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
-                    android:fontFamily="monospace"/>
-                <TextView android:id="@+id/tvF1"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
-                    android:fontFamily="monospace"/>
-                <TextView android:id="@+id/tvMap50"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
-                    android:fontFamily="monospace"
-                    android:layout_marginBottom="10dp"/>
-                <TextView android:id="@+id/tvInfMean"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurfaceVariant" android:textSize="13sp"
-                    android:fontFamily="monospace"/>
-                <TextView android:id="@+id/tvInfMin"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurfaceVariant" android:textSize="13sp"
-                    android:fontFamily="monospace"/>
-                <TextView android:id="@+id/tvInfMax"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurfaceVariant" android:textSize="13sp"
-                    android:fontFamily="monospace"/>
-                <TextView android:id="@+id/tvInfStd"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurfaceVariant" android:textSize="13sp"
-                    android:fontFamily="monospace"/>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+            android:text="FSL Detector"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:layout_marginBottom="16dp"/>
 
-        <!-- Bar Chart Card -->
+        <!-- Model Selection Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -99,19 +38,38 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Per-Class Performance"
-                    android:textSize="16sp"
+                    android:text="Select Model"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="8dp"/>
-                <com.github.mikephil.charting.charts.BarChart
-                    android:id="@+id/barChart"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnScanModels"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Scan Folder for .tflite Models"
+                    android:layout_marginBottom="10dp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_search"
+                    app:iconGravity="textStart"/>
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupModel"
                     android:layout_width="match_parent"
-                    android:layout_height="300dp"/>
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true"/>
+                <TextView
+                    android:id="@+id/tvActiveModel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textSize="12sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:text="No .tflite files found — tap Scan"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Per-Class Table Card -->
+        <!-- Backend Selection Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -127,20 +85,34 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Per-Class Breakdown"
-                    android:textSize="16sp"
+                    android:text="Backend"
+                    android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="8dp"/>
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvPerClass"
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupBackend"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"/>
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCpu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CPU (XNNPACK)"
+                        style="@style/Widget.Material3.Chip.Filter"/>
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGpu"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="GPU (OpenGL)"
+                        style="@style/Widget.Material3.Chip.Filter"/>
+                </com.google.android.material.chip.ChipGroup>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Confusion Matrix Card -->
+        <!-- Thresholds Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -154,26 +126,98 @@
                 android:orientation="vertical"
                 android:padding="16dp">
                 <TextView
+                    android:id="@+id/tvConfidence"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Normalized Confusion Matrix"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
+                    android:text="Confidence threshold: 0.25"
+                    android:textSize="13sp"
                     android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="4dp"/>
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderConfidence"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="0.05"
+                    android:valueTo="0.95"
+                    android:stepSize="0.05"
+                    android:layout_marginBottom="12dp"/>
                 <TextView
+                    android:id="@+id/tvIou"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Rows = Actual · Columns = Predicted · Pinch to zoom · Drag to pan"
-                    android:textSize="11sp"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:layout_marginBottom="12dp"/>
-                <com.fsl.detector.ui.ConfusionMatrixView
-                    android:id="@+id/confusionMatrixView"
+                    android:text="IoU (NMS) threshold: 0.45"
+                    android:textSize="13sp"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="4dp"/>
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/sliderIou"
                     android:layout_width="match_parent"
-                    android:layout_height="420dp"/>
+                    android:layout_height="wrap_content"
+                    android:valueFrom="0.05"
+                    android:valueTo="0.95"
+                    android:stepSize="0.05"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Actions Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSingleImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Single Image"
+                    android:textSize="15sp"
+                    android:layout_marginBottom="10dp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_gallery"
+                    app:iconGravity="textStart"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBatchFolder"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Batch Evaluate Folder"
+                    android:textSize="15sp"
+                    android:layout_marginBottom="10dp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_agenda"
+                    app:iconGravity="textStart"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLiveCamera"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Live Camera"
+                    android:textSize="15sp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_camera"
+                    app:iconGravity="textStart"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Progress -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+        <TextView
+            android:id="@+id/tvBatchProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="13sp"
+            android:visibility="gone"/>
     </LinearLayout>
 </ScrollView>
