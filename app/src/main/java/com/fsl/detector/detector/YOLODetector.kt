@@ -85,24 +85,22 @@ class YOLODetector(
         val numOutputs = interpreter!!.outputTensorCount
 
         if (numOutputs >= 2) {
-            // YOLO-NAS: output_0 = [1, anchors, 4]  output_1 = [1, anchors, num_classes]
+            // YOLO-NAS: output_0=[1,anchors,4]  output_1=[1,anchors,num_classes]
             isSplitOutput        = true
             outputIsAnchorsFirst = true
             val boxShape = interpreter!!.getOutputTensor(0).shape()
             numAnchors   = boxShape[1]
-
             android.util.Log.d("YOLODetector",
                 "Split output | boxes=${boxShape.toList()} | " +
                         "scores=${interpreter!!.getOutputTensor(1).shape().toList()}")
         } else {
-            // YOLOv8 / YOLO11: single tensor [1, 31, 8400] or [1, 8400, 31]
+            // YOLOv8 / YOLO11: single tensor [1,31,8400] or [1,8400,31]
             isSplitOutput = false
             val outputShape = interpreter!!.getOutputTensor(0).shape()
             if (outputShape.size == 3) {
                 outputIsAnchorsFirst = outputShape[2] == (NUM_CLASSES + 4)
                 numAnchors = if (outputIsAnchorsFirst) outputShape[1] else outputShape[2]
             }
-
             android.util.Log.d("YOLODetector",
                 "Single output | shape=${outputShape.toList()} | " +
                         "anchorsFirst=$outputIsAnchorsFirst | numAnchors=$numAnchors")
@@ -127,17 +125,14 @@ class YOLODetector(
         val t1 = System.currentTimeMillis()
 
         return if (isSplitOutput) {
-            // YOLO-NAS: two output tensors
             val boxArray   = Array(1) { Array(numAnchors) { FloatArray(4) } }
             val scoreArray = Array(1) { Array(numAnchors) { FloatArray(NUM_CLASSES) } }
             val outputs    = mapOf(0 to boxArray, 1 to scoreArray)
             interpreter?.runForMultipleInputsOutputs(arrayOf(inputBuffer), outputs)
 
-            // ── Raw logit diagnostic (first inference only) ───────
+            // ── Raw score diagnostic ──────────────────────────────
             val rawScores = scoreArray[0]
-            var rawMin = Float.MAX_VALUE
-            var rawMax = -Float.MAX_VALUE
-            var rawSum = 0.0
+            var rawMin = Float.MAX_VALUE; var rawMax = -Float.MAX_VALUE; var rawSum = 0.0
             val sampleAnchors = minOf(100, numAnchors)
             for (i in 0 until sampleAnchors) {
                 for (c in 0 until NUM_CLASSES) {
@@ -148,9 +143,8 @@ class YOLODetector(
                 }
             }
             android.util.Log.d("YOLODetector",
-                "Raw logits (first $sampleAnchors anchors) | " +
-                        "min=${"%.4f".format(rawMin)} " +
-                        "max=${"%.4f".format(rawMax)} " +
+                "Raw scores (first $sampleAnchors anchors) | " +
+                        "min=${"%.4f".format(rawMin)} max=${"%.4f".format(rawMax)} " +
                         "mean=${"%.4f".format(rawSum / (sampleAnchors * NUM_CLASSES))}")
             // ── End diagnostic ────────────────────────────────────
 
@@ -159,7 +153,6 @@ class YOLODetector(
             val t3   = System.currentTimeMillis()
             InferenceOutput(dets, t2 - t1, t1 - t0, t3 - t2)
         } else {
-            // YOLOv8 / YOLO11: single output tensor
             val outputArray = if (outputIsAnchorsFirst)
                 Array(1) { Array(numAnchors) { FloatArray(NUM_CLASSES + 4) } }
             else
@@ -203,21 +196,17 @@ class YOLODetector(
             argbBuffer.get() // skip alpha
 
             if (isQuantized) {
-                // INT8 quantized: pass raw bytes
+                // INT8: raw bytes
                 buf.put(r.toByte())
                 buf.put(g.toByte())
                 buf.put(b.toByte())
             } else if (isSplitOutput) {
-                // YOLO-NAS: normalization is baked into TFLite graph — pass raw [0, 255] floats.
-                // If max logit is still ~0.017 after this, try BGR order instead:
-                //   buf.putFloat(b.toFloat())
-                //   buf.putFloat(g.toFloat())
-                //   buf.putFloat(r.toFloat())
+                // YOLO-NAS: normalization baked into graph — pass raw [0,255] floats
                 buf.putFloat(r.toFloat())
                 buf.putFloat(g.toFloat())
                 buf.putFloat(b.toFloat())
             } else {
-                // YOLOv8 / YOLO11: simple [0, 1] normalization
+                // YOLOv8 / YOLO11: [0,1] normalization
                 buf.putFloat(r / 255f)
                 buf.putFloat(g / 255f)
                 buf.putFloat(b / 255f)
@@ -244,7 +233,8 @@ class YOLODetector(
                 }
                 if (maxScore >= confidenceThreshold)
                     candidates.add(DetectionResult(
-                        yoloBoxToRect(cx, cy, w, h, lb), classIdx, FSL_CLASSES[classIdx], maxScore))
+                        yoloBoxToRect(cx, cy, w, h, lb),
+                        classIdx, FSL_CLASSES[classIdx], maxScore))
             }
         } else {
             val data = rawOutput[0]
@@ -265,34 +255,36 @@ class YOLODetector(
     // ── Post-processing: split tensors (YOLO-NAS) ────────────────────
 
     private fun parseAndNMSSplit(
-        boxArray:   Array<Array<FloatArray>>,
-        scoreArray: Array<Array<FloatArray>>,
+        boxArray:   Array<Array<FloatArray>>,  // [1][anchors][4] xyxy absolute input-space
+        scoreArray: Array<Array<FloatArray>>,  // [1][anchors][num_classes] already probabilities
         lb: LetterboxInfo
     ): List<DetectionResult> {
         val candidates = mutableListOf<DetectionResult>()
         val boxes  = boxArray[0]
         val scores = scoreArray[0]
 
-        // ── Diagnostic ────────────────────────────────────────────────
+        // YOLO-NAS max confidence is ~0.7 — use a higher effective threshold to
+        // suppress weak background anchors from non-primary scales
+        val effectiveThreshold = maxOf(confidenceThreshold, 0.40f)
+
+        // ── Diagnostic ────────────────────────────────────────────
         var maxScoreOverall = -Float.MAX_VALUE
         var maxScoreAnchor  = 0
         var maxScoreClass   = 0
         var aboveThreshold  = 0
         for (i in 0 until numAnchors) {
             for (c in 0 until NUM_CLASSES) {
-                val prob = scores[i][c]  // already a probability — no sigmoid
+                val prob = scores[i][c]
                 if (prob > maxScoreOverall) {
-                    maxScoreOverall = prob
-                    maxScoreAnchor  = i
-                    maxScoreClass   = c
+                    maxScoreOverall = prob; maxScoreAnchor = i; maxScoreClass = c
                 }
-                if (prob >= confidenceThreshold) aboveThreshold++
+                if (prob >= effectiveThreshold) aboveThreshold++
             }
         }
         android.util.Log.d("YOLODetector",
             "YOLO-NAS scores (raw) | max=${"%.4f".format(maxScoreOverall)} " +
                     "at anchor=$maxScoreAnchor cls=$maxScoreClass(${FSL_CLASSES[maxScoreClass]}) | " +
-                    "above threshold($confidenceThreshold): $aboveThreshold")
+                    "above threshold($effectiveThreshold): $aboveThreshold")
 
         data class AS(val idx: Int, val cls: Int, val prob: Float)
         val top5 = mutableListOf<AS>()
@@ -312,22 +304,27 @@ class YOLODetector(
                         "prob=${"%.4f".format(it.prob)} " +
                         "box=[${b[0]}, ${b[1]}, ${b[2]}, ${b[3]}]")
         }
-        // ── End diagnostic ─────────────────────────────────────────────
+        // ── End diagnostic ────────────────────────────────────────
+
+        // Image dimensions after undoing letterbox
+        val imgW = (inputSize - 2 * lb.padLeft) / lb.scale
+        val imgH = (inputSize - 2 * lb.padTop)  / lb.scale
 
         for (i in 0 until numAnchors) {
             var maxScore = -Float.MAX_VALUE
             var classIdx = 0
             for (c in 0 until NUM_CLASSES) {
-                val prob = scores[i][c]  // raw probability directly
+                val prob = scores[i][c]
                 if (prob > maxScore) { maxScore = prob; classIdx = c }
             }
-            if (maxScore >= confidenceThreshold) {
+            if (maxScore >= effectiveThreshold) {
                 val b = boxes[i]
+                // Undo letterbox: YOLO-NAS outputs absolute xyxy in inputSize pixel space
                 val rect = RectF(
-                    (b[0] - lb.padLeft) / lb.scale,
-                    (b[1] - lb.padTop)  / lb.scale,
-                    (b[2] - lb.padLeft) / lb.scale,
-                    (b[3] - lb.padTop)  / lb.scale
+                    ((b[0] - lb.padLeft) / lb.scale).coerceIn(0f, imgW),
+                    ((b[1] - lb.padTop)  / lb.scale).coerceIn(0f, imgH),
+                    ((b[2] - lb.padLeft) / lb.scale).coerceIn(0f, imgW),
+                    ((b[3] - lb.padTop)  / lb.scale).coerceIn(0f, imgH)
                 )
                 candidates.add(DetectionResult(rect, classIdx, FSL_CLASSES[classIdx], maxScore))
             }
@@ -335,12 +332,9 @@ class YOLODetector(
         return nonMaxSuppression(candidates)
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────
+    // ── Box conversion ───────────────────────────────────────────────
 
-    private fun sigmoid(x: Float): Float =
-        1f / (1f + Math.exp(-x.toDouble())).toFloat()
-
-    // YOLOv8/YOLO11: normalized cxcywh → original image pixel xyxy via letterbox inversion
+    // YOLOv8/YOLO11: normalized cxcywh → original image xyxy via letterbox inversion
     private fun yoloBoxToRect(
         cx: Float, cy: Float, w: Float, h: Float,
         lb: LetterboxInfo
@@ -349,29 +343,36 @@ class YOLODetector(
         val cyPx = cy * inputSize
         val wPx  = w  * inputSize
         val hPx  = h  * inputSize
+        val imgW = (inputSize - 2 * lb.padLeft) / lb.scale
+        val imgH = (inputSize - 2 * lb.padTop)  / lb.scale
         return RectF(
-            ((cxPx - wPx / 2f) - lb.padLeft) / lb.scale,
-            ((cyPx - hPx / 2f) - lb.padTop)  / lb.scale,
-            ((cxPx + wPx / 2f) - lb.padLeft) / lb.scale,
-            ((cyPx + hPx / 2f) - lb.padTop)  / lb.scale
+            (((cxPx - wPx / 2f) - lb.padLeft) / lb.scale).coerceIn(0f, imgW),
+            (((cyPx - hPx / 2f) - lb.padTop)  / lb.scale).coerceIn(0f, imgH),
+            (((cxPx + wPx / 2f) - lb.padLeft) / lb.scale).coerceIn(0f, imgW),
+            (((cyPx + hPx / 2f) - lb.padTop)  / lb.scale).coerceIn(0f, imgH)
         )
     }
 
-    // ── NMS ──────────────────────────────────────────────────────────
+    // ── NMS — per-class to suppress cross-scale duplicates ───────────
 
     private fun nonMaxSuppression(detections: List<DetectionResult>): List<DetectionResult> {
-        val sorted = detections.sortedByDescending { it.confidence }.toMutableList()
-        val kept   = mutableListOf<DetectionResult>()
-        while (sorted.isNotEmpty()) {
-            val best = sorted.removeAt(0)
-            kept.add(best)
-            sorted.removeAll { iou(best.boundingBox, it.boundingBox) > iouThreshold }
-        }
-        return kept
+        return detections
+            .groupBy { it.classIndex }
+            .values
+            .flatMap { classDetections ->
+                val sorted = classDetections.sortedByDescending { it.confidence }.toMutableList()
+                val kept   = mutableListOf<DetectionResult>()
+                while (sorted.isNotEmpty()) {
+                    val best = sorted.removeAt(0)
+                    kept.add(best)
+                    sorted.removeAll { iou(best.boundingBox, it.boundingBox) > iouThreshold }
+                }
+                kept
+            }
     }
 
     private fun iou(a: RectF, b: RectF): Float {
-        val iL = maxOf(a.left, b.left); val iT = maxOf(a.top, b.top)
+        val iL = maxOf(a.left, b.left);  val iT = maxOf(a.top, b.top)
         val iR = minOf(a.right, b.right); val iB = minOf(a.bottom, b.bottom)
         if (iR <= iL || iB <= iT) return 0f
         val inter = (iR - iL) * (iB - iT)
