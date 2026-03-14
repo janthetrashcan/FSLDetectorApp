@@ -166,6 +166,8 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
                     producer.join()
                     MetricsCalculator.computeAggregateMetrics(results)
                 }
+                MetricsCache.lastConfidenceThreshold = confidenceThreshold
+                MetricsCache.lastIouThreshold        = iouThreshold
                 MetricsCache.lastMetrics   = metrics
                 MetricsCache.lastModelName = selectedModel?.displayName ?: ""
                 MetricsCache.lastBackend   = selectedBackend.displayName

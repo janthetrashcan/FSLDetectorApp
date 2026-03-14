@@ -1,6 +1,7 @@
 package com.fsl.detector.ui
 
 import android.annotation.SuppressLint
+import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,16 +24,47 @@ class PerClassAdapter(
         val tvR:     TextView = view.findViewById(R.id.tvR)
         val tvF1:    TextView = view.findViewById(R.id.tvF1)
         val tvAp:    TextView = view.findViewById(R.id.tvAp)
+        val allCells get() = listOf(tvClass, tvTp, tvFp, tvFn, tvP, tvR, tvF1, tvAp)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH =
-        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_per_class, parent, false))
+        VH(LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_per_class, parent, false))
 
-    override fun getItemCount() = data.size
+    override fun getItemCount() = data.size + 1
 
     @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: VH, position: Int) {
-        val s = data[position]
+        val ctx = holder.itemView.context
+
+        // Always fully reset every cell before binding to prevent recycling artifacts
+        val ta        = ctx.theme.obtainStyledAttributes(intArrayOf(android.R.attr.textColorPrimary))
+        val textColor = ta.getColor(0, android.graphics.Color.BLACK)
+        ta.recycle()
+
+        holder.allCells.forEach {
+            it.alpha     = 1f
+            it.setTypeface(null, Typeface.NORMAL)
+            it.setTextColor(textColor)
+        }
+
+        if (position == 0) {
+            holder.tvClass.text = "Class"
+            holder.tvTp.text    = "TP"
+            holder.tvFp.text    = "FP"
+            holder.tvFn.text    = "FN"
+            holder.tvP.text     = "Prec"
+            holder.tvR.text     = "Rec"
+            holder.tvF1.text    = "F1"
+            holder.tvAp.text    = "AP@50"
+            holder.allCells.forEach {
+                it.setTypeface(null, Typeface.BOLD)
+                it.alpha = 0.55f
+            }
+            return
+        }
+
+        val s = data[position - 1]
         holder.tvClass.text = s.className
         holder.tvTp.text    = "${s.tp}"
         holder.tvFp.text    = "${s.fp}"
