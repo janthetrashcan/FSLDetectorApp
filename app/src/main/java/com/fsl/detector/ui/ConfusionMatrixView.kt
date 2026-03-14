@@ -20,31 +20,34 @@ class ConfusionMatrixView @JvmOverloads constructor(
     var matrix: Array<FloatArray> = emptyArray()
         set(value) { field = value; invalidate() }
 
-    // Automatically append "BG" label when matrix is (n+1)×(n+1)
     private val baseLabels = YOLODetector.FSL_CLASSES
-    private val n get() = matrix.size
-    private val labels get() = if (n == baseLabels.size + 1)
+    private val n          get() = matrix.size
+    private val labels     get() = if (n == baseLabels.size + 1)
         baseLabels + listOf("BG") else baseLabels
 
-    private val COLOR_HIGH = Color.parseColor("#1565C0")
-    private val COLOR_DIAG = Color.parseColor("#0D47A1")
-    private val COLOR_FP   = Color.parseColor("#B71C1C")  // dark red for BG row (FPs)
-    private val COLOR_FN   = Color.parseColor("#4A148C")  // dark purple for BG col (FNs)
+    // Fixed heatmap colors — do NOT use colorSurface as COLOR_LOW
+    // because it's identical to the card background, making cells invisible
+    private val COLOR_EMPTY = Color.parseColor("#E8EAF6")  // very light indigo
+    private val COLOR_LOW   = Color.parseColor("#C5CAE9")  // light indigo — visible on any bg
+    private val COLOR_HIGH  = Color.parseColor("#1565C0")  // deep blue
+    private val COLOR_DIAG  = Color.parseColor("#0D47A1")  // deeper blue for TP diagonal
+    private val COLOR_FP    = Color.parseColor("#B71C1C")  // dark red  — BG row
+    private val COLOR_FN    = Color.parseColor("#4A148C")  // dark purple — BG col
 
-    private val COLOR_LOW       get() = resolveMaterialColor("colorSurface",        Color.WHITE)
-    private val COLOR_EMPTY     get() = resolveMaterialColor("colorSurfaceVariant", Color.LTGRAY)
-    private val COLOR_LABEL     get() = resolveThemeColor(android.R.attr.textColorPrimary)
-    private val COLOR_LABEL_SEC get() = resolveThemeColor(android.R.attr.textColorSecondary)
-    private val COLOR_BORDER    get() = resolveMaterialColor("colorOutline",         Color.GRAY)
-    private val COLOR_BG        get() = resolveMaterialColor("colorSurface",        Color.WHITE)
+    private val COLOR_EMPTY_DARK = Color.parseColor("#1A1C2E")
+    private val COLOR_LOW_DARK   = Color.parseColor("#1E2454")
 
     private val cellPaint        = Paint(Paint.ANTI_ALIAS_FLAG)
     private val borderPaint      = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style       = Paint.Style.STROKE
         strokeWidth = 0.5f
     }
-    private val textPaint        = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = Typeface.DEFAULT_BOLD }
-    private val labelPaint       = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = Typeface.DEFAULT }
+    private val textPaint        = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT_BOLD
+    }
+    private val labelPaint       = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT
+    }
     private val axisPaint        = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize  = 11f
         typeface  = Typeface.DEFAULT_BOLD
@@ -62,20 +65,6 @@ class ConfusionMatrixView @JvmOverloads constructor(
     private var offsetY     = 0f
     private val minScale    = 0.3f
     private val maxScale    = 4f
-
-    private fun resolveThemeColor(attrResId: Int): Int {
-        val typedValue = android.util.TypedValue()
-        context.theme.resolveAttribute(attrResId, typedValue, true)
-        return typedValue.data
-    }
-
-    private fun resolveMaterialColor(attrName: String, fallback: Int): Int {
-        val pkg     = context.packageName
-        val attrId  = context.resources.getIdentifier(attrName, "attr", pkg)
-        if (attrId == 0) return fallback
-        val tv = android.util.TypedValue()
-        return if (context.theme.resolveAttribute(attrId, tv, true)) tv.data else fallback
-    }
 
     private val scaleDetector = ScaleGestureDetector(context,
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -106,19 +95,35 @@ class ConfusionMatrixView @JvmOverloads constructor(
         return true
     }
 
+    private fun isDarkMode(): Boolean {
+        val uiMode = context.resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        return uiMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (n == 0) return
 
+        val dark          = isDarkMode()
         val currentLabels = labels
-        val bgRow = n - 1  // background row index (FPs) when matrix is n+1
-        val hasBG = n == baseLabels.size + 1
+        val bgRow         = n - 1
+        val hasBG         = n == baseLabels.size + 1
 
-        bgPaint.color          = COLOR_BG
-        borderPaint.color      = COLOR_BORDER
-        labelPaint.color       = COLOR_LABEL
-        axisPaint.color        = COLOR_LABEL
-        legendLabelPaint.color = COLOR_LABEL_SEC
+        // Resolve theme-dependent colors once per draw
+        val colorLabel    = resolveThemeColor(android.R.attr.textColorPrimary)
+        val colorLabelSec = resolveThemeColor(android.R.attr.textColorSecondary)
+        val colorBorder   = resolveMaterialColor("colorOutline", Color.GRAY)
+        val colorSurface  = resolveMaterialColor("colorSurface", if (dark) Color.BLACK else Color.WHITE)
+
+        val emptyCell = if (dark) COLOR_EMPTY_DARK else COLOR_EMPTY
+        val lowCell   = if (dark) COLOR_LOW_DARK   else COLOR_LOW
+
+        bgPaint.color          = colorSurface
+        borderPaint.color      = colorBorder
+        labelPaint.color       = colorLabel
+        axisPaint.color        = colorLabel
+        legendLabelPaint.color = colorLabelSec
 
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
 
@@ -148,33 +153,52 @@ class ConfusionMatrixView @JvmOverloads constructor(
 
                 if (right < 0 || left > width || bottom < 0 || top > height) continue
 
-                cellPaint.color = when {
-                    value <= 0f             -> COLOR_EMPTY
-                    hasBG && r == bgRow && c < n - 1 ->
-                        // FP cells: BG row, actual class cols
-                        ColorUtils.blendARGB(COLOR_EMPTY, COLOR_FP, value)
-                    hasBG && c == n - 1 && r < n - 1 ->
-                        // FN cells: actual class rows, BG col
-                        ColorUtils.blendARGB(COLOR_EMPTY, COLOR_FN, value)
-                    hasBG && r == bgRow && c == n - 1 ->
-                        // BG×BG corner — unused, draw as empty
-                        COLOR_EMPTY
-                    r == c                  -> COLOR_DIAG
-                    else                    -> ColorUtils.blendARGB(COLOR_LOW, COLOR_HIGH, value)
+                val isBgRow = hasBG && r == bgRow
+                val isBgCol = hasBG && c == n - 1
+                val isBgCorner = isBgRow && isBgCol
+
+                val cellColor = when {
+                    isBgCorner ->
+                        emptyCell
+                    isBgRow ->
+                        // FP row: empty → red
+                        if (value <= 0f) emptyCell
+                        else ColorUtils.blendARGB(emptyCell, COLOR_FP, value)
+                    isBgCol ->
+                        // FN col: empty → purple
+                        if (value <= 0f) emptyCell
+                        else ColorUtils.blendARGB(emptyCell, COLOR_FN, value)
+                    value <= 0f ->
+                        emptyCell
+                    r == c ->
+                        // TP diagonal: low → deep blue
+                        ColorUtils.blendARGB(lowCell, COLOR_DIAG, value)
+                    else ->
+                        // Misclassification: low → high blue
+                        ColorUtils.blendARGB(lowCell, COLOR_HIGH, value)
                 }
+
+                cellPaint.color = cellColor
                 canvas.drawRect(left, top, right, bottom, cellPaint)
                 canvas.drawRect(left, top, right, bottom, borderPaint)
 
-                if (cellSize >= 18f && value > 0.001f) {
+                // Draw value text — always show if cell has any value
+                if (cellSize >= 16f && value > 0.001f) {
                     val txt = if (value >= 0.995f) "1.0"
                     else ".${"%.0f".format(value * 100).padStart(2, '0')}"
                     val tW  = textPaint.measureText(txt)
                     val tH  = textPaint.textSize
-                    textPaint.color = if (value > 0.55f) Color.WHITE else COLOR_LABEL
-                    canvas.drawText(txt,
+
+                    // Compute luminance of cell to pick contrasting text color
+                    val lum = ColorUtils.calculateLuminance(cellColor)
+                    textPaint.color = if (lum < 0.35) Color.WHITE else Color.BLACK
+
+                    canvas.drawText(
+                        txt,
                         left + (cellSize - tW) / 2f,
                         top  + (cellSize + tH) / 2f - 2f,
-                        textPaint)
+                        textPaint
+                    )
                 }
             }
         }
@@ -184,24 +208,25 @@ class ConfusionMatrixView @JvmOverloads constructor(
         for (r in 0 until n) {
             val top = matrixTop + r * cellSize
             if (top + cellSize < 0 || top > height) continue
-            // Highlight BG label in red
-            labelPaint.color = if (hasBG && r == bgRow) COLOR_FP else COLOR_LABEL
+            val lbl = currentLabels.getOrElse(r) { "?" }
+            // BG row label in red, all others in normal theme color
+            labelPaint.color = if (hasBG && r == bgRow) COLOR_FP else colorLabel
             canvas.drawText(
-                currentLabels.getOrElse(r) { "?" },
+                lbl,
                 labelMargin - 4f,
                 top + (cellSize + labelPaint.textSize) / 2f - 2f,
                 labelPaint
             )
         }
-        labelPaint.color = COLOR_LABEL
 
         // ── Column labels (predicted) ────────────────────────────
         labelPaint.textAlign = Paint.Align.LEFT
         for (c in 0 until n) {
             val left = matrixLeft + c * cellSize
             if (left + cellSize < 0 || left > width) continue
-            labelPaint.color = if (hasBG && c == n - 1) COLOR_FN else COLOR_LABEL
             val lbl = currentLabels.getOrElse(c) { "?" }
+            // BG col label in purple, all others in normal theme color
+            labelPaint.color = if (hasBG && c == n - 1) COLOR_FN else colorLabel
             canvas.save()
             canvas.rotate(-90f, left + cellSize / 2f, labelMargin - 4f)
             canvas.drawText(
@@ -212,10 +237,17 @@ class ConfusionMatrixView @JvmOverloads constructor(
             )
             canvas.restore()
         }
-        labelPaint.color = COLOR_LABEL
+
+        // Reset label paint color after loops
+        labelPaint.color = colorLabel
 
         // ── Axis labels ──────────────────────────────────────────
-        canvas.drawText("Predicted", matrixLeft + n * cellSize / 2f, 14f, axisPaint)
+        canvas.drawText(
+            "Predicted",
+            matrixLeft + n * cellSize / 2f,
+            14f,
+            axisPaint
+        )
         canvas.save()
         canvas.rotate(-90f, 10f, matrixTop + n * cellSize / 2f)
         canvas.drawText("Actual", 10f, matrixTop + n * cellSize / 2f, axisPaint)
@@ -229,11 +261,15 @@ class ConfusionMatrixView @JvmOverloads constructor(
             val legendShader = LinearGradient(
                 legendLeft, legendTop + legendHeight,
                 legendLeft, legendTop,
-                COLOR_LOW, COLOR_HIGH,
+                lowCell, COLOR_HIGH,
                 Shader.TileMode.CLAMP
             )
             cellPaint.shader = legendShader
-            canvas.drawRect(legendLeft, legendTop, legendLeft + legendW, legendTop + legendHeight, cellPaint)
+            canvas.drawRect(
+                legendLeft, legendTop,
+                legendLeft + legendW, legendTop + legendHeight,
+                cellPaint
+            )
             cellPaint.shader = null
 
             canvas.drawText("1.0", legendLeft + legendW + 2f, legendTop + 10f,               legendLabelPaint)
@@ -242,10 +278,18 @@ class ConfusionMatrixView @JvmOverloads constructor(
         }
     }
 
-    private fun resolveAttrColor(attr: Int): Int {
-        val ta = context.obtainStyledAttributes(intArrayOf(attr))
-        val color = ta.getColor(0, Color.BLACK)
-        ta.recycle()
-        return color
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    private fun resolveThemeColor(attrResId: Int): Int {
+        val tv = android.util.TypedValue()
+        context.theme.resolveAttribute(attrResId, tv, true)
+        return tv.data
+    }
+
+    private fun resolveMaterialColor(attrName: String, fallback: Int): Int {
+        val attrId = context.resources.getIdentifier(attrName, "attr", context.packageName)
+        if (attrId == 0) return fallback
+        val tv = android.util.TypedValue()
+        return if (context.theme.resolveAttribute(attrId, tv, true)) tv.data else fallback
     }
 }
