@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5">
+    android:background="?attr/colorSurface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -11,37 +12,17 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Header Banner -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
+        <!-- Header -->
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="#1A237E">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="FSL Alphabet Detector"
-                    android:textColor="#FFFFFF"
-                    android:textSize="22sp"
-                    android:textStyle="bold"/>
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="YOLOv8 · YOLO-NAS · YOLO11  |  27 Classes (A–Z + Ñ)"
-                    android:textColor="#B0BEC5"
-                    android:textSize="13sp"
-                    android:layout_marginTop="4dp"/>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+            android:text="FSL Detector"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorOnSurface"
+            android:layout_marginBottom="16dp"/>
 
-        <!-- Model Selection -->
+        <!-- Model Selection Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -59,7 +40,7 @@
                     android:text="Select Model"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="#37474F"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="8dp"/>
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnScanModels"
@@ -82,12 +63,12 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:textSize="12sp"
-                    android:textColor="#78909C"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:text="No .tflite files found — tap Scan"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Backend Selection -->
+        <!-- Backend Selection Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -102,10 +83,10 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Inference Backend"
+                    android:text="Backend"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="#37474F"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="8dp"/>
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupBackend"
@@ -129,7 +110,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Thresholds -->
+        <!-- Thresholds Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -147,7 +128,8 @@
                     android:layout_height="wrap_content"
                     android:text="Confidence threshold: 0.25"
                     android:textSize="13sp"
-                    android:textColor="#37474F"/>
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="4dp"/>
                 <com.google.android.material.slider.Slider
                     android:id="@+id/sliderConfidence"
                     android:layout_width="match_parent"
@@ -155,97 +137,84 @@
                     android:valueFrom="0.05"
                     android:valueTo="0.95"
                     android:stepSize="0.05"
-                    android:value="0.25"/>
+                    android:layout_marginBottom="12dp"/>
                 <TextView
                     android:id="@+id/tvIou"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="IoU (NMS) threshold: 0.45"
                     android:textSize="13sp"
-                    android:textColor="#37474F"
-                    android:layout_marginTop="8dp"/>
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="4dp"/>
                 <com.google.android.material.slider.Slider
                     android:id="@+id/sliderIou"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:valueFrom="0.10"
-                    android:valueTo="0.90"
-                    android:stepSize="0.05"
-                    android:value="0.45"/>
+                    android:valueFrom="0.05"
+                    android:valueTo="0.95"
+                    android:stepSize="0.05"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Action Buttons -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSingleImage"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Select Single Image"
-            android:textSize="15sp"
-            android:layout_marginBottom="10dp"
-            app:icon="@android:drawable/ic_menu_gallery"
-            app:iconGravity="textStart"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnBatchFolder"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Batch Process Folder"
-            android:textSize="15sp"
-            android:layout_marginBottom="12dp"
-            style="@style/Widget.Material3.Button.TonalButton"
-            app:icon="@android:drawable/ic_menu_slideshow"
-            app:iconGravity="textStart"/>
-
-        <!-- Progress -->
-        <ProgressBar
-            android:id="@+id/progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:indeterminate="true"
-            android:visibility="gone"/>
-
-        <TextView
-            android:id="@+id/tvBatchProgress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:textSize="13sp"
-            android:textColor="#546E7A"
-            android:visibility="gone"/>
-
-        <!-- Instructions -->
+        <!-- Actions Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
             app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="#E8F5E9"
-            >
+            app:cardElevation="2dp">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="14dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Setup Instructions"
-                    android:textStyle="bold"
-                    android:textSize="13sp"
-                    android:textColor="#1B5E20"/>
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="#2E7D32"
-                    android:lineSpacingMultiplier="1.4"
-                    android:layout_marginTop="6dp"
-                    android:text="1. Place model files in a folder in the file system\n\n2. Load them with the Scan Folder for .tflite Models button\n\n3. For batch metrics, place YOLO .txt label files alongside each image (same filename, .txt extension).\n\n4. Warm-up: 10 iterations are run automatically before timing starts."/>
+                android:padding="16dp">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSingleImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Single Image"
+                    android:textSize="15sp"
+                    android:layout_marginBottom="10dp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_gallery"
+                    app:iconGravity="textStart"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBatchFolder"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Batch Evaluate Folder"
+                    android:textSize="15sp"
+                    android:layout_marginBottom="10dp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_agenda"
+                    app:iconGravity="textStart"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLiveCamera"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Live Camera"
+                    android:textSize="15sp"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_camera"
+                    app:iconGravity="textStart"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Progress -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
+        <TextView
+            android:id="@+id/tvBatchProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="13sp"
+            android:visibility="gone"/>
     </LinearLayout>
 </ScrollView>

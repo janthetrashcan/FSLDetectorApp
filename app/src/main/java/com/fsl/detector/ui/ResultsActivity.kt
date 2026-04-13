@@ -1,16 +1,26 @@
 package com.fsl.detector.ui
 
-import android.graphics.Color
+import android.content.ContentValues
+import android.os.Build
 import android.os.Bundle
-import android.view.MenuItem
+import android.os.Environment
+import android.provider.MediaStore
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.fsl.detector.databinding.ActivityResultsBinding
+import com.fsl.detector.detector.YOLODetector
 import com.fsl.detector.metrics.MetricsCalculator
 import com.fsl.detector.utils.MetricsCache
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.*
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import org.json.JSONObject
+import java.io.OutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ResultsActivity : AppCompatActivity() {
 
@@ -20,89 +30,237 @@ class ResultsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityResultsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        title = "Batch Evaluation Results"
 
-        val metrics   = MetricsCache.lastMetrics ?: run { finish(); return }
-        val modelName = MetricsCache.lastModelName
-        val backend   = MetricsCache.lastBackend
+        val metrics   = MetricsCache.lastMetrics   ?: return
+        val modelName = MetricsCache.lastModelName ?: "Unknown"
+        val backend   = MetricsCache.lastBackend   ?: "CPU"
 
-        populateSummary(metrics, modelName, backend)
+        setupSummary(metrics, modelName, backend)
         setupBarChart(metrics)
         setupPerClassTable(metrics)
         setupConfusionMatrix(metrics)
+        setupExport(metrics, modelName, backend)
     }
 
-    private fun populateSummary(m: MetricsCalculator.AggregateMetrics, model: String, backend: String) {
-        binding.tvSummaryHeader.text  = "Model: $model  |  Backend: $backend"
-        binding.tvTotalImages.text    = "Images evaluated: ${m.totalImages}"
-        binding.tvTotalDets.text      = "Total detections: ${m.totalDetections}"
-        binding.tvTotalGTs.text       = "Total ground truths: ${m.totalGroundTruths}"
+    // ── Summary ──────────────────────────────────────────────────────
 
-        binding.tvPrecision.text  = "Precision:  ${"%.4f".format(m.precision)}  (${pct(m.precision)})"
-        binding.tvRecall.text     = "Recall:     ${"%.4f".format(m.recall)}  (${pct(m.recall)})"
-        binding.tvAccuracy.text   = "Accuracy:   ${"%.4f".format(m.accuracy)}  (${pct(m.accuracy)})"
-        binding.tvF1.text         = "F1-Score:   ${"%.4f".format(m.f1)}  (${pct(m.f1)})  ± ${"%.4f".format(m.f1StdDev)} std dev"
-        binding.tvMap50.text      = "mAP@50:     ${"%.4f".format(m.mAP50)}  (${pct(m.mAP50)})"
-
-        binding.tvInfMean.text = "Mean inference:   ${"%.1f".format(m.meanInferenceMs)} ms"
-        binding.tvInfMin.text  = "Min  inference:   ${m.minInferenceMs} ms"
-        binding.tvInfMax.text  = "Max  inference:   ${m.maxInferenceMs} ms"
-        binding.tvInfStd.text  = "Std dev:          ${"%.2f".format(m.stdDevInferenceMs)} ms"
+    private fun setupSummary(
+        m: MetricsCalculator.AggregateMetrics,
+        model: String,
+        backend: String
+    ) {
+        binding.tvSummaryHeader.text = "$model  ·  $backend"
+        binding.tvTotalImages.text   = "Images evaluated   : ${m.totalImages}"
+        binding.tvTotalDets.text     = "Total detections   : ${m.totalDetections}"
+        binding.tvTotalGTs.text      = "Total ground truths: ${m.totalGroundTruths}"
+        binding.tvPrecision.text     = "Precision  : ${"%.4f".format(m.precision)}"
+        binding.tvRecall.text        = "Recall     : ${"%.4f".format(m.recall)}"
+        binding.tvAccuracy.text      = "Accuracy   : ${"%.4f".format(m.accuracy)}"
+        binding.tvF1.text            = "F1-Score   : ${"%.4f".format(m.f1)}  (±${"%.4f".format(m.f1StdDev)})"
+        binding.tvMap50.text         = "mAP@50     : ${"%.4f".format(m.mAP50)}"
+        binding.tvInfMean.text       = "Inference mean : ${"%.1f".format(m.meanInferenceMs)} ms"
+        binding.tvInfMin.text        = "Inference min  : ${m.minInferenceMs} ms"
+        binding.tvInfMax.text        = "Inference max  : ${m.maxInferenceMs} ms"
+        binding.tvInfStd.text        = "Inference σ    : ${"%.1f".format(m.stdDevInferenceMs)} ms"
     }
 
-    private fun pct(v: Float) = "${"%.1f".format(v * 100)}%"
+    // ── Bar chart ────────────────────────────────────────────────────
 
     private fun setupBarChart(m: MetricsCalculator.AggregateMetrics) {
-        val labels = m.perClassStats.map { it.className }
+        val entries = m.perClassStats.mapIndexed { i, s -> BarEntry(i.toFloat(), s.f1) }
+        val dataSet = BarDataSet(entries, "F1 per class").apply {
+            colors = m.perClassStats.map { s ->
+                when {
+                    s.f1 >= 0.8f -> android.graphics.Color.parseColor("#27AE60")
+                    s.f1 >= 0.5f -> android.graphics.Color.parseColor("#F39C12")
+                    else         -> android.graphics.Color.parseColor("#E74C3C")
+                }
+            }
+            setDrawValues(false)
+        }
 
-        val precVals: List<BarEntry> = m.perClassStats.mapIndexed { i, s -> BarEntry(i.toFloat(), s.precision) }
-        val recVals:  List<BarEntry> = m.perClassStats.mapIndexed { i, s -> BarEntry(i.toFloat(), s.recall) }
-        val f1Vals:   List<BarEntry> = m.perClassStats.mapIndexed { i, s -> BarEntry(i.toFloat(), s.f1) }
-        val apVals:   List<BarEntry> = m.perClassStats.mapIndexed { i, s -> BarEntry(i.toFloat(), s.ap50) }
-
-        val dsPrecision = BarDataSet(precVals, "Precision").apply { color = Color.parseColor("#4ECDC4") }
-        val dsRecall    = BarDataSet(recVals,  "Recall").apply    { color = Color.parseColor("#FF6B6B") }
-        val dsF1        = BarDataSet(f1Vals,   "F1").apply        { color = Color.parseColor("#45B7D1") }
-        val dsAP        = BarDataSet(apVals,   "AP@50").apply     { color = Color.parseColor("#96CEB4") }
-
-        val groupSpace   = 0.1f
-        val barSpace     = 0.02f
-        val computedBarW = (1f - groupSpace - 4 * barSpace) / 4
-
-        val barData = BarData(dsPrecision, dsRecall, dsF1, dsAP)
-        barData.barWidth = computedBarW
-
+        val textColor = resolveAttrColor(android.R.attr.textColorPrimary)
         binding.barChart.apply {
-            data = barData
-            groupBars(0f, groupSpace, barSpace)
+            data = BarData(dataSet).apply { barWidth = 0.85f }
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            description.isEnabled = false
+            legend.isEnabled      = false
             xAxis.apply {
-                position           = XAxis.XAxisPosition.BOTTOM
+                valueFormatter     = IndexAxisValueFormatter(YOLODetector.FSL_CLASSES)
                 granularity        = 1f
-                valueFormatter     = IndexAxisValueFormatter(labels)
                 labelRotationAngle = -45f
+                this.textColor     = textColor
                 setDrawGridLines(false)
             }
-            axisLeft.apply { axisMinimum = 0f; axisMaximum = 1f }
-            axisRight.isEnabled   = false
-            description.isEnabled = false
-            legend.isEnabled      = true
-            animateY(800)
+            axisLeft.apply {
+                axisMinimum    = 0f
+                axisMaximum    = 1f
+                this.textColor = textColor
+            }
+            axisRight.isEnabled = false
+            animateY(600)
             invalidate()
         }
     }
 
+    // ── Per-class table ──────────────────────────────────────────────
+
     private fun setupPerClassTable(m: MetricsCalculator.AggregateMetrics) {
-        binding.rvPerClass.layoutManager = LinearLayoutManager(this)
-        binding.rvPerClass.adapter = PerClassAdapter(m.perClassStats)
+        binding.rvPerClass.apply {
+            layoutManager = LinearLayoutManager(this@ResultsActivity)
+            adapter       = PerClassAdapter(m.perClassStats)
+        }
     }
+
+    // ── Confusion matrix ─────────────────────────────────────────────
 
     private fun setupConfusionMatrix(m: MetricsCalculator.AggregateMetrics) {
         binding.confusionMatrixView.matrix = m.confusionMatrix
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) { finish(); return true }
-        return super.onOptionsItemSelected(item)
+    // ── Export ───────────────────────────────────────────────────────
+
+    private fun setupExport(
+        m: MetricsCalculator.AggregateMetrics,
+        modelName: String,
+        backend: String
+    ) {
+        binding.btnExport.setOnClickListener {
+            binding.btnExport.isEnabled       = false
+            binding.tvExportStatus.visibility = View.VISIBLE
+            binding.tvExportStatus.text       = "Exporting…"
+
+            try {
+                val stamp    = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+                val safeName = modelName.replace(Regex("[^A-Za-z0-9_\\-]"), "_")
+
+                val jsonName = "${safeName}_${backend}_${stamp}_summary.json"
+                val csvName  = "${safeName}_${backend}_${stamp}_per_class.csv"
+                val cmName   = "${safeName}_${backend}_${stamp}_confusion_matrix.csv"
+
+                writeToDownloads(jsonName, "application/json") { buildSummaryJson(m, modelName, backend) }
+                writeToDownloads(csvName,  "text/csv")         { buildPerClassCsv(m) }
+                writeToDownloads(cmName,   "text/csv")         { buildConfusionMatrixCsv(m) }
+
+                binding.tvExportStatus.text =
+                    "✓ Saved to Downloads:\n• $jsonName\n• $csvName\n• $cmName"
+            } catch (e: Exception) {
+                binding.tvExportStatus.text = "✗ Export failed: ${e.message}"
+            } finally {
+                binding.btnExport.isEnabled = true
+            }
+        }
+    }
+
+    private fun writeToDownloads(fileName: String, mimeType: String, content: () -> String) {
+        val stream: OutputStream = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: throw IllegalStateException("MediaStore insert failed for $fileName")
+            contentResolver.openOutputStream(uri)
+                ?: throw IllegalStateException("Cannot open stream for $fileName")
+        } else {
+            val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            dir.mkdirs()
+            java.io.FileOutputStream(java.io.File(dir, fileName))
+        }
+        stream.use { it.write(content().toByteArray(Charsets.UTF_8)) }
+    }
+
+    // ── Content builders ─────────────────────────────────────────────
+
+    private fun buildSummaryJson(
+        m: MetricsCalculator.AggregateMetrics,
+        modelName: String,
+        backend: String
+    ): String = JSONObject().apply {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+
+        put("model_name",             modelName)
+        put("backend",                backend)
+        put("executed_at",            sdf.format(Date()))
+        put("confidence_threshold",   MetricsCache.lastConfidenceThreshold.toDouble())
+        put("iou_nms_threshold",      MetricsCache.lastIouThreshold.toDouble())
+        put("images_evaluated",       m.totalImages)
+        put("total_detections",       m.totalDetections)
+        put("total_ground_truths",    m.totalGroundTruths)
+        put("precision",              m.precision.toDouble())
+        put("recall",                 m.recall.toDouble())
+        put("accuracy",               m.accuracy.toDouble())
+        put("f1_score",               m.f1.toDouble())
+        put("f1_std_dev",             m.f1StdDev.toDouble())
+        put("mAP50",                  m.mAP50.toDouble())
+        put("inference_mean_ms",      m.meanInferenceMs.toDouble())
+        put("inference_min_ms",       m.minInferenceMs)
+        put("inference_max_ms",       m.maxInferenceMs)
+        put("inference_std_ms",       m.stdDevInferenceMs.toDouble())
+        put("exported_at",            sdf.format(Date()))
+    }.toString(2)
+
+    private fun buildPerClassCsv(m: MetricsCalculator.AggregateMetrics): String {
+        val sb = StringBuilder()
+        sb.appendLine("class,tp,fp,fn,precision,recall,f1,ap50")
+        for (s in m.perClassStats) {
+            sb.appendLine(
+                "${s.className},${s.tp},${s.fp},${s.fn}," +
+                        "${"%.6f".format(s.precision)},${"%.6f".format(s.recall)}," +
+                        "${"%.6f".format(s.f1)},${"%.6f".format(s.ap50)}"
+            )
+        }
+        return sb.toString()
+    }
+
+    private fun buildConfusionMatrixCsv(m: MetricsCalculator.AggregateMetrics): String {
+        val baseLabels = YOLODetector.FSL_CLASSES
+        val n          = m.rawConfusionMatrix.size  // n+1 if BG row included
+        val hasBG      = n == baseLabels.size + 1
+        val labels     = if (hasBG) baseLabels + listOf("BG") else baseLabels
+        val sb         = StringBuilder()
+
+        // ── Normalized matrix ─────────────────────────────────────
+        sb.appendLine("NORMALIZED CONFUSION MATRIX")
+        sb.appendLine("rows=Actual (BG row=FPs)  cols=Predicted (BG col=FNs)")
+        sb.append("actual\\predicted")
+        labels.forEach { sb.append(",$it") }
+        sb.appendLine()
+        for (r in 0 until n) {
+            sb.append(labels.getOrElse(r) { "BG" })
+            for (c in 0 until n) {
+                sb.append(",${"%.6f".format(m.confusionMatrix[r][c])}")
+            }
+            sb.appendLine()
+        }
+
+        sb.appendLine()
+        sb.appendLine()
+
+        // ── Raw matrix ────────────────────────────────────────────
+        sb.appendLine("RAW CONFUSION MATRIX (counts)")
+        sb.appendLine("rows=Actual (BG row=FPs)  cols=Predicted (BG col=FNs)")
+        sb.append("actual\\predicted")
+        labels.forEach { sb.append(",$it") }
+        sb.appendLine()
+        for (r in 0 until n) {
+            sb.append(labels.getOrElse(r) { "BG" })
+            for (c in 0 until n) {
+                sb.append(",${m.rawConfusionMatrix[r][c]}")
+            }
+            sb.appendLine()
+        }
+
+        return sb.toString()
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    private fun resolveAttrColor(attr: Int): Int {
+        val ta    = theme.obtainStyledAttributes(intArrayOf(attr))
+        val color = ta.getColor(0, android.graphics.Color.BLACK)
+        ta.recycle()
+        return color
     }
 }

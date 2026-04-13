@@ -1,207 +1,226 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5">
+    android:background="?attr/colorSurface">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="16dp">
 
-        <!-- Header -->
-        <TextView
-            android:id="@+id/tvSummaryHeader"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:textColor="#1A237E"
-            android:layout_marginBottom="10dp"/>
-
-        <!-- Dataset Stats -->
-        <androidx.cardview.widget.CardView
+        <!-- Summary Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            app:cardCornerRadius="10dp" app:cardElevation="2dp">
-            <LinearLayout android:layout_width="match_parent"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" android:padding="14dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Dataset" android:textStyle="bold" android:textSize="13sp"
-                    android:textColor="#37474F" android:layout_marginBottom="6dp"/>
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:id="@+id/tvSummaryHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="10dp"/>
                 <TextView android:id="@+id/tvTotalImages"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="13sp"/>
+                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"/>
                 <TextView android:id="@+id/tvTotalDets"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="13sp"/>
+                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"/>
                 <TextView android:id="@+id/tvTotalGTs"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="13sp"/>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- Aggregate Metrics -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            app:cardCornerRadius="10dp" app:cardElevation="2dp"
-            app:cardBackgroundColor="#E8EAF6">
-            <LinearLayout android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" android:padding="14dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Aggregate Metrics" android:textStyle="bold" android:textSize="14sp"
-                    android:textColor="#1A237E" android:layout_marginBottom="8dp"/>
+                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
+                    android:layout_marginBottom="10dp"/>
                 <TextView android:id="@+id/tvPrecision"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp" android:layout_marginBottom="3dp"/>
+                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
+                    android:fontFamily="monospace"/>
                 <TextView android:id="@+id/tvRecall"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp" android:layout_marginBottom="3dp"/>
+                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
+                    android:fontFamily="monospace"/>
                 <TextView android:id="@+id/tvAccuracy"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp" android:layout_marginBottom="3dp"/>
+                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
+                    android:fontFamily="monospace"/>
                 <TextView android:id="@+id/tvF1"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp" android:layout_marginBottom="3dp"/>
+                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
+                    android:fontFamily="monospace"/>
                 <TextView android:id="@+id/tvMap50"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp" android:textStyle="bold"/>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- Inference Speed -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            app:cardCornerRadius="10dp" app:cardElevation="2dp"
-            app:cardBackgroundColor="#E0F2F1">
-            <LinearLayout android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" android:padding="14dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Inference Speed" android:textStyle="bold" android:textSize="14sp"
-                    android:textColor="#004D40" android:layout_marginBottom="8dp"/>
+                    android:textColor="?attr/colorOnSurface" android:textSize="13sp"
+                    android:fontFamily="monospace"
+                    android:layout_marginBottom="10dp"/>
                 <TextView android:id="@+id/tvInfMean"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp" android:layout_marginBottom="3dp"/>
+                    android:textColor="?attr/colorOnSurfaceVariant" android:textSize="13sp"
+                    android:fontFamily="monospace"/>
                 <TextView android:id="@+id/tvInfMin"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp" android:layout_marginBottom="3dp"/>
+                    android:textColor="?attr/colorOnSurfaceVariant" android:textSize="13sp"
+                    android:fontFamily="monospace"/>
                 <TextView android:id="@+id/tvInfMax"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp" android:layout_marginBottom="3dp"/>
+                    android:textColor="?attr/colorOnSurfaceVariant" android:textSize="13sp"
+                    android:fontFamily="monospace"/>
                 <TextView android:id="@+id/tvInfStd"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:fontFamily="monospace" android:textSize="13sp"/>
+                    android:textColor="?attr/colorOnSurfaceVariant" android:textSize="13sp"
+                    android:fontFamily="monospace"/>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Bar Chart: Per-class Precision/Recall/F1/AP@50 -->
-        <androidx.cardview.widget.CardView
+        <!-- Bar Chart Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="10dp"
-            app:cardCornerRadius="10dp" app:cardElevation="2dp">
-            <LinearLayout android:layout_width="match_parent"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" android:padding="14dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Per-Class Performance (Grouped Bar)" android:textStyle="bold"
-                    android:textSize="14sp" android:textColor="#37474F" android:layout_marginBottom="8dp"/>
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Per-Class Performance"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="8dp"/>
                 <com.github.mikephil.charting.charts.BarChart
                     android:id="@+id/barChart"
                     android:layout_width="match_parent"
                     android:layout_height="300dp"/>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Per-Class Table -->
-        <androidx.cardview.widget.CardView
+        <!-- Per-Class Table Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="10dp" app:cardElevation="2dp">
-            <LinearLayout android:layout_width="match_parent"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" android:padding="14dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Per-Class Table" android:textStyle="bold"
-                    android:textSize="14sp" android:textColor="#37474F" android:layout_marginBottom="8dp"/>
-
-                <!-- Table header -->
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:orientation="horizontal" android:background="#ECEFF1" android:padding="6dp">
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.2"
-                        android:text="Class" android:textStyle="bold" android:textSize="11sp"/>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.7"
-                        android:text="TP" android:textStyle="bold" android:textSize="11sp" android:gravity="center"/>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.7"
-                        android:text="FP" android:textStyle="bold" android:textSize="11sp" android:gravity="center"/>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.7"
-                        android:text="FN" android:textStyle="bold" android:textSize="11sp" android:gravity="center"/>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="P" android:textStyle="bold" android:textSize="11sp" android:gravity="center"/>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="R" android:textStyle="bold" android:textSize="11sp" android:gravity="center"/>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="F1" android:textStyle="bold" android:textSize="11sp" android:gravity="center"/>
-                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                        android:text="AP@50" android:textStyle="bold" android:textSize="11sp" android:gravity="center"/>
-                </LinearLayout>
-
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Per-Class Breakdown"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="8dp"/>
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvPerClass"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"/>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Confusion Matrix -->
-        <androidx.cardview.widget.CardView
+        <!-- Export Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
             app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
-
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Export Results"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_marginBottom="4dp"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Saves summary JSON, per-class CSV, and confusion matrix CSV to Downloads"
+                    android:textSize="12sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginBottom="12dp"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExport"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Export to Downloads"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:icon="@android:drawable/ic_menu_save"
+                    app:iconGravity="textStart"/>
+                <TextView
+                    android:id="@+id/tvExportStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textSize="12sp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
+        <!-- Confusion Matrix Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Normalized Confusion Matrix"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="#37474F"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="4dp"/>
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Rows = Actual class · Columns = Predicted class · Pinch to zoom · Drag to pan"
+                    android:text="Rows = Actual · Columns = Predicted · Pinch to zoom · Drag to pan"
                     android:textSize="11sp"
-                    android:textColor="#90A4AE"
+                    android:textColor="?attr/colorOnSurfaceVariant"
                     android:layout_marginBottom="12dp"/>
-
                 <com.fsl.detector.ui.ConfusionMatrixView
                     android:id="@+id/confusionMatrixView"
                     android:layout_width="match_parent"
                     android:layout_height="420dp"/>
-
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </ScrollView>
