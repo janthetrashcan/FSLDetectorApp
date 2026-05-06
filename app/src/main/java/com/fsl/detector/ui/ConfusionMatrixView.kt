@@ -25,8 +25,6 @@ class ConfusionMatrixView @JvmOverloads constructor(
     private val labels     get() = if (n == baseLabels.size + 1)
         baseLabels + listOf("BG") else baseLabels
 
-    // Fixed heatmap colors — do NOT use colorSurface as COLOR_LOW
-    // because it's identical to the card background, making cells invisible
     private val COLOR_EMPTY = Color.parseColor("#E8EAF6")  // very light indigo
     private val COLOR_LOW   = Color.parseColor("#C5CAE9")  // light indigo — visible on any bg
     private val COLOR_HIGH  = Color.parseColor("#1565C0")  // deep blue

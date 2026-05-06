@@ -29,7 +29,8 @@ class YOLODetector(
             "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
             "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ñ"
         )
-        private const val YOLO_NAS_SCORE_THRESHOLD  = 0.01f
+
+        private const val YOLO_NAS_SCORE_THRESHOLD = 0.01f
         private const val YOLO_NAS_NMS_IOU_THRESHOLD = 0.7f
     }
 
@@ -464,12 +465,30 @@ class YOLODetector(
         val padLeft = (inputSize - scaledW) / 2
         val padTop  = (inputSize - scaledH) / 2
 
-        val letterboxed = Bitmap.createBitmap(inputSize, inputSize, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(letterboxed)
-        canvas.drawColor(Color.argb(255, 114, 114, 114))
-        val scaled = Bitmap.createScaledBitmap(bitmap, scaledW, scaledH, true)
-        canvas.drawBitmap(scaled, padLeft.toFloat(), padTop.toFloat(), null)
-        scaled.recycle()
+        // Match training: score_threshold=0.01, nms_threshold=0.7
+        val scoreThresh = YOLO_NAS_SCORE_THRESHOLD
+
+        // ── Diagnostic ───────────────────────────────────────────
+        var maxScoreOverall = -Float.MAX_VALUE
+        var maxScoreAnchor  = 0
+        var maxScoreClass   = 0
+        var aboveTrainThresh = 0
+        var aboveUserThresh  = 0
+        for (i in 0 until numAnchors) {
+            for (c in 0 until NUM_CLASSES) {
+                val prob = scores[i][c]
+                if (prob > maxScoreOverall) {
+                    maxScoreOverall = prob; maxScoreAnchor = i; maxScoreClass = c
+                }
+                if (prob >= scoreThresh)         aboveTrainThresh++
+                if (prob >= confidenceThreshold) aboveUserThresh++
+            }
+        }
+        android.util.Log.d("YOLODetector",
+            "YOLO-NAS | max=${"%.4f".format(maxScoreOverall)} " +
+                    "cls=$maxScoreClass(${FSL_CLASSES[maxScoreClass]}) | " +
+                    "above train thresh($scoreThresh): $aboveTrainThresh | " +
+                    "above user thresh($confidenceThreshold): $aboveUserThresh")
 
         val pixels = IntArray(inputSize * inputSize)
         letterboxed.getPixels(pixels, 0, inputSize, 0, 0, inputSize, inputSize)
