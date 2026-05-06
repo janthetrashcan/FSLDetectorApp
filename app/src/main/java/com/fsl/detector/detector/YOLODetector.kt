@@ -28,8 +28,6 @@ class YOLODetector(
             "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "Ñ"
         )
 
-        // YOLO-NAS training used score_threshold=0.01, nms_threshold=0.7
-        // These must match to reproduce training-time metric behaviour
         private const val YOLO_NAS_SCORE_THRESHOLD = 0.01f
         private const val YOLO_NAS_NMS_IOU_THRESHOLD = 0.7f
     }
@@ -273,8 +271,6 @@ class YOLODetector(
         val scores = scoreArray[0]
 
         // Match training: score_threshold=0.01, nms_threshold=0.7
-        // User-facing confidenceThreshold still applies as a post-NMS display filter
-        // but we use the training threshold for candidate generation to match mAP behaviour
         val scoreThresh = YOLO_NAS_SCORE_THRESHOLD
 
         // ── Diagnostic ───────────────────────────────────────────
