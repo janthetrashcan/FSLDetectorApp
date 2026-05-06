@@ -37,32 +37,41 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
 
     // ── Model discovery ──────────────────────────────────────────────
 
-    /**
-     * Scans a user-selected folder (and one level of subdirectories) for .tflite files.
-     * Results are posted to availableModels LiveData and chips are rebuilt in MainActivity.
-     */
     fun scanForModels(folderUri: Uri) {
         viewModelScope.launch {
             val context = getApplication<Application>()
             val models = withContext(Dispatchers.IO) {
                 val found = mutableListOf<ModelConfig>()
-                val dir = DocumentFile.fromTreeUri(context, folderUri) ?: return@withContext found
+                val dir = DocumentFile.fromTreeUri(context, folderUri)
+                    ?: return@withContext found
+
+                android.util.Log.d("DetectorViewModel",
+                    "Scanning folder: ${dir.name} | total files: ${dir.listFiles().size}")
+
                 dir.listFiles().forEach { file ->
                     when {
-                        file.isFile && file.name?.endsWith(".tflite", ignoreCase = true) == true -> {
+                        file.isFile && (
+                                file.name?.endsWith(".tflite", ignoreCase = true) == true ||
+                                        file.name?.endsWith(".onnx",   ignoreCase = true) == true
+                                ) -> {
                             found.add(ModelConfig(
-                                displayName = file.name!!.removeSuffix(".tflite"),
+                                displayName = file.name!!,
                                 uri         = file.uri
                             ))
+                            android.util.Log.d("DetectorViewModel", "Found model: ${file.name}")
                         }
                         file.isDirectory -> {
-                            // one level deep
                             file.listFiles().forEach { sub ->
-                                if (sub.isFile && sub.name?.endsWith(".tflite", ignoreCase = true) == true) {
+                                if (sub.isFile && (
+                                            sub.name?.endsWith(".tflite", ignoreCase = true) == true ||
+                                                    sub.name?.endsWith(".onnx",   ignoreCase = true) == true
+                                            )) {
                                     found.add(ModelConfig(
-                                        displayName = sub.name!!.removeSuffix(".tflite"),
+                                        displayName = sub.name!!,
                                         uri         = sub.uri
                                     ))
+                                    android.util.Log.d("DetectorViewModel",
+                                        "Found model (subdir): ${sub.name}")
                                 }
                             }
                         }
@@ -70,6 +79,8 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
                 }
                 found.sortedBy { it.displayName }
             }
+
+            android.util.Log.d("DetectorViewModel", "Total models found: ${models.size}")
             availableModels.value = models
             if (models.isNotEmpty() && selectedModel == null) {
                 selectedModel = models.first()
@@ -83,7 +94,10 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
         val current = detector
         if (current != null) return current
         val model = selectedModel ?: throw IllegalStateException("No model selected")
-        val d = YOLODetector(getApplication(), model, selectedBackend, confidenceThreshold, iouThreshold)
+        val d = YOLODetector(
+            getApplication(), model, selectedBackend,
+            confidenceThreshold, iouThreshold
+        )
         detector = d
         return d
     }
@@ -100,7 +114,9 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
             isLoading.value = true
             errorMessage.value = null
             try {
-                val result = withContext(Dispatchers.Default) { getOrCreateDetector().detect(bitmap) }
+                val result = withContext(Dispatchers.Default) {
+                    getOrCreateDetector().detect(bitmap)
+                }
                 singleImageResult.value = result
             } catch (e: Exception) {
                 errorMessage.value = "Inference failed: ${e.message}"
@@ -116,19 +132,32 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
     fun runBatchProcessing(folderUri: Uri) {
         viewModelScope.launch {
             isLoading.value = true
-            batchMetrics.value = null
-            errorMessage.value = null
+            batchMetrics.value  = null
+            errorMessage.value  = null
             try {
                 val metrics = withContext(Dispatchers.Default) {
                     val context    = getApplication<Application>()
                     val imageFiles = LabelUtils.getImageDocuments(folderUri, context)
-                    if (imageFiles.isEmpty()) throw IllegalArgumentException("No images found in selected folder")
+                    if (imageFiles.isEmpty())
+                        throw IllegalArgumentException("No images found in selected folder")
 
                     val dirIndex = LabelUtils.buildDirectoryIndex(folderUri, context)
                     val det      = getOrCreateDetector()
 
-                    val firstBitmap = LabelUtils.decodeBitmapFromDocument(imageFiles.first(), context)
-                    if (firstBitmap != null) { repeat(10) { det.detect(firstBitmap) }; firstBitmap.recycle() }
+                    // ONNX Runtime needs more warmup iterations for JIT graph optimization
+                    val isOnnxModel = selectedModel?.displayName
+                        ?.endsWith(".onnx", ignoreCase = true) == true
+                    val warmupCount = if (isOnnxModel) 20 else 10
+                    android.util.Log.d("DetectorViewModel",
+                        "Warming up model (${if (isOnnxModel) "ONNX" else "TFLite"}) " +
+                                "with $warmupCount iterations")
+
+                    val firstBitmap = LabelUtils.decodeBitmapFromDocument(
+                        imageFiles.first(), context)
+                    if (firstBitmap != null) {
+                        repeat(warmupCount) { det.detect(firstBitmap) }
+                        firstBitmap.recycle()
+                    }
 
                     data class DecodedItem(
                         val bitmap: Bitmap,
@@ -137,11 +166,13 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
                         val name: String
                     )
 
-                    val channel = Channel<DecodedItem>(capacity = 3)
+                    val channel  = Channel<DecodedItem>(capacity = 3)
                     val producer = launch(Dispatchers.IO) {
                         imageFiles.forEachIndexed { idx, docFile ->
-                            val bmp = LabelUtils.decodeBitmapFromDocument(docFile, context) ?: return@forEachIndexed
-                            val gts = LabelUtils.loadGroundTruthsFromIndex(docFile, dirIndex, context)
+                            val bmp = LabelUtils.decodeBitmapFromDocument(docFile, context)
+                                ?: return@forEachIndexed
+                            val gts = LabelUtils.loadGroundTruthsFromIndex(
+                                docFile, dirIndex, context)
                             channel.send(DecodedItem(bmp, gts, idx, docFile.name ?: ""))
                         }
                         channel.close()
@@ -159,19 +190,26 @@ class DetectorViewModel(application: Application) : AndroidViewModel(application
                             ))
                         }
                         val debugTag = if (item.index == 0) item.name else ""
-                        results.add(MetricsCalculator.ImageMetricsInput(output.detections, scaledGTs, output.inferenceTimeMs, debugTag))
+                        results.add(MetricsCalculator.ImageMetricsInput(
+                            output.detections, scaledGTs,
+                            output.inferenceTimeMs, debugTag
+                        ))
                         item.bitmap.recycle()
-                        withContext(Dispatchers.Main) { batchProgress.value = (item.index + 1) to imageFiles.size }
+                        withContext(Dispatchers.Main) {
+                            batchProgress.value = (item.index + 1) to imageFiles.size
+                        }
                     }
                     producer.join()
                     MetricsCalculator.computeAggregateMetrics(results)
                 }
+
                 MetricsCache.lastConfidenceThreshold = confidenceThreshold
                 MetricsCache.lastIouThreshold        = iouThreshold
-                MetricsCache.lastMetrics   = metrics
-                MetricsCache.lastModelName = selectedModel?.displayName ?: ""
-                MetricsCache.lastBackend   = selectedBackend.displayName
+                MetricsCache.lastMetrics             = metrics
+                MetricsCache.lastModelName           = selectedModel?.displayName ?: ""
+                MetricsCache.lastBackend             = selectedBackend.displayName
                 batchMetrics.value = metrics
+
             } catch (e: Exception) {
                 errorMessage.value = "Batch processing failed: ${e.message}"
             } finally {

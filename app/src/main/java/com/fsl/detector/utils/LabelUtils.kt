@@ -8,6 +8,7 @@ import android.graphics.RectF
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.fsl.detector.detector.GroundTruth
+import com.fsl.detector.detector.ModelConfig
 
 object LabelUtils {
 
@@ -156,6 +157,19 @@ object LabelUtils {
         val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         bitmap.recycle()
         return rotated
+    }
+
+    fun scanForModels(context: Context, folderUri: Uri): List<ModelConfig> {
+        val dir = DocumentFile.fromTreeUri(context, folderUri) ?: return emptyList()
+        return dir.listFiles()
+            .filter { it.isFile && it.name?.let { n ->
+                n.endsWith(".tflite", ignoreCase = true) ||
+                        n.endsWith(".onnx",   ignoreCase = true)
+            } == true }
+            .mapNotNull { file ->
+                file.name?.let { name -> ModelConfig(name, file.uri) }
+            }
+            .sortedBy { it.displayName }
     }
 
 }
